@@ -100,6 +100,8 @@ function defaultState() {
     rfqPublished: false,
     uploadDone: false,
     uploadedFiles: [],
+    lineItems: [],
+    locations: [],
     targetPrice: TARGET_PRICE,
     benchmarkMin: BENCHMARK_MIN,
     benchmarkMax: BENCHMARK_MAX,
@@ -138,11 +140,84 @@ function confClass(c) {
 }
 
 function validatePrompt(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (lines.length < 3) return { ok: false, msg: 'Please write at least 3 lines describing your requirement.' };
-  if (!/\bbangalore\b/i.test(text)) return { ok: false, msg: 'Please mention Bangalore as the delivery location.' };
-  if (text.trim().length < 80) return { ok: false, msg: 'Please provide more detail — aim for 3–4 descriptive lines.' };
+  const trimmed = text.trim();
+  if (trimmed.length < 40) return { ok: false, msg: 'Please describe your requirement in more detail.' };
+  const newlineLines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+  const sentences = trimmed.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 8);
+  if (newlineLines.length < 2 && sentences.length < 2) {
+    return { ok: false, msg: 'Please include quantity, delivery location(s), and specs (2–3 sentences is fine).' };
+  }
+  if (!/\b(bangalore|mumbai|delhi|hyderabad|chennai|pune|india)\b/i.test(trimmed)) {
+    return { ok: false, msg: 'Please mention at least one delivery location.' };
+  }
   return { ok: true };
+}
+
+function parseRequirement(text) {
+  const specs = [];
+  if (/16\s*gb\s*ram/i.test(text)) specs.push('16GB RAM');
+  if (/512\s*gb\s*ssd/i.test(text)) specs.push('512GB SSD');
+  const cpu = text.match(/intel\s+i[357]/i) || text.match(/\bi[357]\b/i);
+  if (cpu) specs.push(cpu[0].replace(/^i/, 'Intel i'));
+  if (/windows\s*11/i.test(text)) specs.push('Windows 11 Pro');
+  if (/3[\s-]*year\s*warranty/i.test(text)) specs.push('3-year warranty');
+  const desc = specs.length ? specs.join(', ') : text.slice(0, 120);
+
+  const lineItems = [];
+  const locRegex = /(\d+)\s+(?:should be (?:delivered )?to|to be delivered to|to|for)\s+(\w+)(?:\s*\(([^)]+)\))?/gi;
+  let match;
+  while ((match = locRegex.exec(text)) !== null) {
+    const city = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+    const office = match[3] ? ` (${match[3]})` : '';
+    lineItems.push({
+      item: 'Business Laptop',
+      desc,
+      uom: 'Units',
+      qty: parseInt(match[1], 10),
+      category: 'IT Hardware',
+      location: city + office,
+    });
+  }
+
+  if (lineItems.length === 0) {
+    const segments = text.split(/\band\b/i);
+    for (const seg of segments) {
+      const m = seg.match(/(\d+).*?(bangalore|mumbai|delhi|hyderabad|chennai|pune)/i);
+      if (m) {
+        const office = seg.match(/\(([^)]+)\)/);
+        const city = m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase();
+        lineItems.push({
+          item: 'Business Laptop',
+          desc,
+          uom: 'Units',
+          qty: parseInt(m[1], 10),
+          category: 'IT Hardware',
+          location: office ? `${city} (${office[1]})` : city,
+        });
+      }
+    }
+  }
+
+  if (lineItems.length === 0) {
+    const total = text.match(/(\d+)\s+(?:business\s+)?laptops/i);
+    const qty = total ? parseInt(total[1], 10) : 50;
+    let location = 'Bangalore';
+    if (/\bmumbai\b/i.test(text)) location = 'Mumbai';
+    else if (/\bbangalore\b/i.test(text)) location = 'Bangalore';
+    lineItems.push({ item: 'Business Laptop', desc, uom: 'Units', qty, category: 'IT Hardware', location });
+  }
+
+  const locations = [...new Set(lineItems.map(li => li.location))];
+  return { lineItems, locations };
+}
+
+function getLineItems() {
+  return S.lineItems && S.lineItems.length ? S.lineItems : LINE_ITEMS;
+}
+
+function getLocationsLabel() {
+  if (S.locations && S.locations.length) return S.locations.join(', ');
+  return 'Bangalore';
 }
 
 function showLanding() {
@@ -160,16 +235,20 @@ function showChat() {
 }
 
 async function startChat(prompt) {
+  const parsed = parseRequirement(prompt);
   S.chatStarted = true;
   S.userPrompt = prompt;
-  S.eventName = 'IT Equipment Sourcing — Bangalore — Aug 2026';
+  S.lineItems = parsed.lineItems;
+  S.locations = parsed.locations;
+  const locLabel = parsed.locations.join(' & ');
+  S.eventName = `IT Equipment Sourcing — ${locLabel} — Aug 2026`;
   document.getElementById('chatTitle').textContent = S.eventName;
   showChat();
   addMsg('user', prompt);
   S.step = 1;
   saveState();
   updateUI();
-  await ariaSay(`Thanks! I've parsed your requirement for <strong>Bangalore</strong>. Here's what I understood:`);
+  await ariaSay(`Thanks! I've parsed your requirement for <strong>${esc(locLabel)}</strong>. Here's what I understood:`);
   await ariaSay(metadataCard());
 }
 
@@ -317,7 +396,8 @@ function ariaSay(html, delay) {
 
 /* ── Card Builders ── */
 function metadataCard() {
-  const rows = LINE_ITEMS.map(li => `
+  const items = getLineItems();
+  const rows = items.map(li => `
     <tr>
       <td>${li.item}</td>
       <td><div class="editable" contenteditable="true">${li.desc}</div></td>
@@ -332,8 +412,8 @@ function metadataCard() {
     <div class="card-body">
       <div class="card-meta">
         <div class="meta-item"><label>Event Currency</label><span>INR (₹)</span></div>
-        <div class="meta-item"><label>Delivery Location</label><span>Bangalore</span></div>
-        <div class="meta-item"><label>Total Line Items</label><span>${LINE_ITEMS.length}</span></div>
+        <div class="meta-item"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
+        <div class="meta-item"><label>Total Line Items</label><span>${items.length}</span></div>
       </div>
       <table class="data-table">
         <thead><tr><th>Item</th><th>Description</th><th>UOM</th><th>Qty</th><th>Category</th><th>Delivery Location</th></tr></thead>
@@ -366,7 +446,8 @@ function eventDetailsCard() {
 }
 
 function rfqPreviewCard() {
-  const itemRows = LINE_ITEMS.map((li, i) => `
+  const items = getLineItems();
+  const itemRows = items.map((li, i) => `
     <tr><td>${i + 1}</td><td>${li.item}</td><td>${li.desc}</td><td>${li.uom}</td><td>${li.qty}</td><td>${li.location}</td></tr>`).join('');
 
   const qRows = RFQ_QUESTIONS.map((q, i) => `
@@ -384,9 +465,9 @@ function rfqPreviewCard() {
         <div class="rfq-grid">
           <div class="rfq-field"><label>Event Name</label><span>${S.eventName}</span></div>
           <div class="rfq-field"><label>Currency</label><span>INR (₹)</span></div>
-          <div class="rfq-field"><label>Delivery Location</label><span>Bangalore</span></div>
-          <div class="rfq-field"><label>Total Items</label><span>${LINE_ITEMS.length} line items</span></div>
-          <div class="rfq-field"><label>Total Quantity</label><span>${LINE_ITEMS.reduce((s, l) => s + l.qty, 0)} units</span></div>
+          <div class="rfq-field"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
+          <div class="rfq-field"><label>Total Items</label><span>${items.length} line items</span></div>
+          <div class="rfq-field"><label>Total Quantity</label><span>${items.reduce((s, l) => s + l.qty, 0)} units</span></div>
           <div class="rfq-field"><label>Category</label><span>IT Hardware & Accessories</span></div>
         </div>
       </div>
@@ -1061,7 +1142,15 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.value = '';
   });
 
-  document.getElementById('landingSubmit').addEventListener('click', () => {
+  document.getElementById('landingSubmit').addEventListener('click', submitLanding);
+  document.getElementById('landingPrompt').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitLanding();
+    }
+  });
+
+  function submitLanding() {
     const prompt = document.getElementById('landingPrompt').value;
     const hint = document.getElementById('landingHint');
     const v = validatePrompt(prompt);
@@ -1072,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     hint.classList.remove('error');
     startChat(prompt);
-  });
+  }
 
   document.querySelectorAll('.landing-chip').forEach(chip => {
     chip.addEventListener('click', () => {
