@@ -61,14 +61,35 @@
     </aside>
 
     <main class="chat-panel">
-      <header class="chat-header">
-        <h1>IT Equipment Sourcing — Aug 2026</h1>
-        <span class="chat-status" id="stepIndicator">Step 0</span>
+      <header class="chat-header" id="chatHeader">
+        <h1 id="chatTitle">New Sourcing Event</h1>
+        <span class="chat-status" id="stepIndicator">Welcome</span>
       </header>
 
-      <div class="messages" id="messages"></div>
+      <!-- Landing Page -->
+      <div class="landing" id="landing">
+        <div class="landing-content">
+          <div class="landing-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19l1 3 1-3 3-1-3-1-1-3-1 3-3 1 3 1z"/><path d="M19 13l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5z"/></svg>
+          </div>
+          <h2 class="landing-title">Hi, I'm Aria.<br>What would you like to source today?</h2>
+          <p class="landing-sub">Describe your requirement in plain language — I'll understand the context, build the RFQ, benchmark prices, recommend suppliers, and guide you all the way to award.</p>
+          <div class="landing-chips">
+            <button class="landing-chip" data-prompt="We need 80 business laptops for new employees joining our Bangalore office.\nSpecs: Intel i7, 16GB RAM, 512GB SSD, Windows 11 Pro.\nDelivery required within 3 weeks to Bangalore.\nPlease include docking stations and 3-year onsite warranty.">💻 Laptops for new employees</button>
+            <button class="landing-chip" data-prompt="We need ergonomic office furniture for 50 workstations in Bangalore.\nItems include height-adjustable desks, mesh chairs, and monitor arms.\nDelivery and assembly at our Bangalore campus required.\nBudget-conscious but quality-focused — need GST-compliant quotes.">🪑 Office furniture</button>
+            <button class="landing-chip" data-prompt="We need Microsoft 365 E5 licences for 200 users in Bangalore.\nInclude Teams, SharePoint, and advanced security features.\nPrefer annual subscription with volume discount.\nNeed migration support from our current Google Workspace setup.">☁️ Software licences</button>
+          </div>
+          <div class="landing-input-wrap">
+            <textarea id="landingPrompt" class="landing-textarea" rows="4" placeholder="Describe your requirement (3–4 lines) — delivery location: Bangalore only&#10;&#10;Example:&#10;We need 80 business laptops for new hires in Bangalore.&#10;Intel i7, 16GB RAM, 512GB SSD, Windows 11 Pro.&#10;Delivery within 3 weeks. Include docking stations."></textarea>
+            <div class="landing-hint" id="landingHint">Write at least 3 lines and mention Bangalore as the delivery location.</div>
+            <button class="landing-submit" id="landingSubmit">Start sourcing →</button>
+          </div>
+        </div>
+      </div>
 
-      <div class="input-area">
+      <div class="messages hidden" id="messages"></div>
+
+      <div class="input-area hidden" id="inputArea">
         <div class="chips" id="chips"></div>
         <div class="input-row">
           <input type="text" id="userInput" placeholder="Type your message…" autocomplete="off">
@@ -79,6 +100,9 @@
       </div>
     </main>
   </div>
+
+  <!-- Hidden file input for attachments -->
+  <input type="file" id="fileInput" multiple hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv">
 
   <!-- Demo Navigator -->
   <div class="demo-nav" id="demoNav">
