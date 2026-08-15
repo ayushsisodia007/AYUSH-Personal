@@ -1076,7 +1076,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.landing-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.getElementById('landingPrompt').value = chip.dataset.prompt;
+      const text = chip.dataset.prompt.replace(/\\n/g, '\n');
+      document.getElementById('landingPrompt').value = text;
       document.getElementById('landingHint').classList.remove('error');
     });
   });
