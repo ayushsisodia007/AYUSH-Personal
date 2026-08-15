@@ -1,0 +1,16 @@
+{
+  "name": "Aria Sourcing Copilot",
+  "terminals": [
+    {
+      "name": "Preview server",
+      "command": "python3 -m http.server 8080 --directory aria-sourcing-copilot",
+      "description": "Local preview at http://localhost:8080"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Preview server",
+      "port": 8080
+    }
+  ]
+}
