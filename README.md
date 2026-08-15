@@ -15,7 +15,7 @@ Or open `aria-sourcing-copilot/index.html` locally in your browser. No build ste
 - **10-step conversational flow**: requirement → RFQ → benchmarks → suppliers → publish → responses → award
 - **Rich inline cards**: metadata tables, RFQ preview, benchmarks, supplier panels, bid comparison
 - **NLP parser**: understands confirmations, supplier selection, numbered options, and more
-- **State persistence**: saved to `localStorage` (`aria_v4_state`)
+- **State persistence**: saved to `localStorage` (`aria_v7_state`)
 - **Demo navigator**: floating button (bottom-right) to jump to any step
 
 ## Reset
