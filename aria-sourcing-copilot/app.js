@@ -4,35 +4,54 @@
    Aria — AI Sourcing Copilot  ·  app.js
    ═══════════════════════════════════════════ */
 
-const STATE_KEY = 'aria_v4_state';
+const STATE_KEY = 'aria_v5_state';
+
+const TARGET_PRICE = 70000;
+const BENCHMARK_MIN = 64800;
+const BENCHMARK_MAX = 71200;
 
 const SUPPLIER_DATA = [
-  { id: 1, name: 'Dell Technologies', score: 94, contact: 'Rajesh Kumar', email: 'rajesh.kumar@dell.com', source: 'Internal', recommended: true,
-    tags: ['Internal', 'RECOMMENDED'], meta: 'Onboarded 2019 · 12 POs · Avg delivery 8 days',
-    rationale: 'Strongest price-performance ratio with proven delivery track record for enterprise laptops in India.' },
-  { id: 2, name: 'HP Enterprise', score: 88, contact: 'Priya Nair', email: 'priya.nair@hpe.com', source: 'Internal',
-    tags: ['Internal'], meta: 'Onboarded 2020 · 8 POs · Avg delivery 10 days',
-    rationale: 'Competitive pricing with excellent warranty terms. Slightly higher unit cost but strong support network.' },
-  { id: 3, name: 'Lenovo India', score: 85, contact: 'Amit Sharma', email: 'amit.sharma@lenovo.com', source: 'Internal',
-    tags: ['Internal'], meta: 'Onboarded 2021 · 5 POs · Avg delivery 12 days',
+  { id: 1, name: 'Dell Technologies', score: 94, contact: 'Rajesh Kumar', email: 'rajesh.kumar@dell.com', source: 'Internal DB', recommended: true,
+    onTime: 97, pastPOs: 12, avgDiscount: 4.5,
+    rationale: 'Strongest performer in your org. Best price-quality ratio with 97% on-time delivery across 12 past POs.' },
+  { id: 2, name: 'HP Enterprise', score: 88, contact: 'Priya Nair', email: 'priya.nair@hpe.com', source: 'Internal DB',
+    onTime: 93, pastPOs: 8, avgDiscount: 3.1,
+    rationale: 'Competitive pricing with excellent warranty terms. Strong support network in Bangalore.' },
+  { id: 3, name: 'Lenovo India', score: 85, contact: 'Amit Sharma', email: 'amit.sharma@lenovo.com', source: 'Internal DB',
+    onTime: 91, pastPOs: 6, avgDiscount: 3.8,
     rationale: 'Good value for bulk orders. ThinkPad series aligns with enterprise security requirements.' },
-  { id: 4, name: 'Acer Business', score: 79, contact: 'Sunita Rao', email: 'sunita.rao@acer.com', source: 'Internal',
-    tags: ['Internal'], meta: 'Onboarded 2022 · 3 POs · Avg delivery 14 days',
+  { id: 4, name: 'Acer Business', score: 79, contact: 'Sunita Rao', email: 'sunita.rao@acer.com', source: 'Internal DB',
+    onTime: 88, pastPOs: 4, avgDiscount: 5.2,
     rationale: 'Budget-friendly option. Suitable for non-critical roles but limited enterprise support.' },
   { id: 5, name: 'Ingram Micro', score: 82, contact: 'Vikram Mehta', email: 'vikram.mehta@ingrammicro.com', source: 'AI Discovered',
-    tags: ['AI Discovered'], meta: 'Discovered via market scan · Multi-brand distributor',
-    rationale: 'Largest IT distributor in India. Can source multiple brands with consolidated billing.' },
+    onTime: 90, pastPOs: 0, avgDiscount: 6.0,
+    rationale: 'Tier-1 distributor with multi-brand portfolio. Pan-India logistics and GST compliant.' },
   { id: 6, name: 'Redington India', score: 77, contact: 'Deepa Krishnan', email: 'deepa.krishnan@redington.in', source: 'AI Discovered',
-    tags: ['AI Discovered'], meta: 'Discovered via market scan · Authorized reseller',
+    onTime: 85, pastPOs: 0, avgDiscount: 5.5,
     rationale: 'Strong regional presence in South India. Competitive on Dell and Lenovo lines.' },
   { id: 7, name: 'Savex Technologies', score: 74, contact: 'Ravi Joshi', email: 'ravi.joshi@savex.co.in', source: 'AI Discovered',
-    tags: ['AI Discovered'], meta: 'Discovered via market scan · Value reseller',
-    rationale: 'Emerging player with aggressive pricing. Limited track record for large enterprise orders.' },
+    onTime: 82, pastPOs: 0, avgDiscount: 7.0,
+    rationale: 'Emerging player with aggressive pricing. ISO 9001 certified, limited enterprise track record.' },
+];
+
+const INTERNAL_BENCHMARKS = [
+  { po: 'PO-2025-089', date: 'Mar 2025', supplier: 'Dell Technologies', item: 'Business Laptop (i5/16/512)', price: 69500, qty: 50, conf: 90 },
+  { po: 'PO-2025-041', date: 'Jan 2025', supplier: 'HP Enterprise', item: 'ProBook 450 G9 (i5/16/512)', price: 71200, qty: 30, conf: 82 },
+  { po: 'PO-2024-203', date: 'Nov 2024', supplier: 'Lenovo India', item: 'ThinkPad E15 Gen 4', price: 68000, qty: 25, conf: 75 },
+  { po: 'PO-2024-118', date: 'Aug 2024', supplier: 'Ingram Micro', item: 'Business Laptop Mix', price: 66500, qty: 40, conf: 65 },
+  { po: 'PO-2023-354', date: 'Jun 2023', supplier: 'Redington India', item: 'Dell Vostro 3520', price: 64800, qty: 20, conf: 55 },
+];
+
+const EXTERNAL_BENCHMARKS = [
+  { source: 'Dell India', ref: 'Vostro 3520 (i5/16/512 SSD)', price: 69999, conf: 92, link: 'dell.com' },
+  { source: 'Amazon Business', ref: 'HP 250 G9 (Core i5, 16GB, 512SSD)', price: 67490, conf: 85, link: 'amazon.in' },
+  { source: 'Lenovo Website', ref: 'ThinkPad E15 Gen 5 (i5/16/512)', price: 71000, conf: 88, link: 'lenovo.com' },
+  { source: 'Flipkart B2B', ref: 'Acer Aspire 5 Business (i5/16/512)', price: 65999, conf: 72, link: 'flipkart.com' },
 ];
 
 const LINE_ITEMS = [
   { item: 'Laptop — Dell Latitude 5540', desc: 'Intel i7-1365U, 16GB RAM, 512GB SSD, 14" FHD, Windows 11 Pro', uom: 'Units', qty: 50, category: 'IT Hardware', location: 'Bangalore' },
-  { item: 'Laptop — HP EliteBook 840', desc: 'Intel i7-1355U, 16GB RAM, 512GB SSD, 14" FHD, Windows 11 Pro', uom: 'Units', qty: 30, category: 'IT Hardware', location: 'Mumbai' },
+  { item: 'Laptop — HP EliteBook 840', desc: 'Intel i7-1355U, 16GB RAM, 512GB SSD, 14" FHD, Windows 11 Pro', uom: 'Units', qty: 30, category: 'IT Hardware', location: 'Bangalore' },
   { item: 'Docking Station — USB-C', desc: 'Universal USB-C dock, dual 4K display, 90W PD', uom: 'Units', qty: 80, category: 'IT Accessories', location: 'Bangalore' },
 ];
 
@@ -53,8 +72,8 @@ const STEP_LABELS = [
 ];
 
 const CHIPS = {
-  0: ['Source 80 laptops for Bangalore & Mumbai', 'Office furniture for new floor', 'Cloud hosting services'],
-  1: ['Yes, looks good', 'Change delivery location', 'Add more line items'],
+  0: [],
+  1: ['Yes, looks good', 'Add more line items', 'Change quantity'],
   2: ['Yes, proceed', 'Edit event name', 'Change a question'],
   3: ['Upload attachments', 'Show price benchmarks', 'Skip to suppliers'],
   4: ['Done uploading', 'Skip attachments', 'Show benchmarks'],
@@ -71,13 +90,19 @@ let S = loadState();
 function defaultState() {
   return {
     step: 0,
+    chatStarted: false,
     messages: [],
+    userPrompt: '',
     eventName: 'IT Equipment Sourcing — Aug 2026',
     suppliers: {},
     selectedNums: [],
     awardDone: false,
     rfqPublished: false,
     uploadDone: false,
+    uploadedFiles: [],
+    targetPrice: TARGET_PRICE,
+    benchmarkMin: BENCHMARK_MIN,
+    benchmarkMax: BENCHMARK_MAX,
   };
 }
 
@@ -96,11 +121,57 @@ function saveState() {
 function hardReset() {
   localStorage.removeItem(STATE_KEY);
   S = defaultState();
+  showLanding();
   render();
-  if (S.step === 0 && S.messages.length === 0) showWelcome();
 }
 
 window.hardReset = hardReset;
+
+function formatPrice(n) {
+  return '₹' + n.toLocaleString('en-IN');
+}
+
+function confClass(c) {
+  if (c >= 80) return 'high';
+  if (c >= 65) return 'mid';
+  return 'low';
+}
+
+function validatePrompt(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 3) return { ok: false, msg: 'Please write at least 3 lines describing your requirement.' };
+  if (!/\bbangalore\b/i.test(text)) return { ok: false, msg: 'Please mention Bangalore as the delivery location.' };
+  if (text.trim().length < 80) return { ok: false, msg: 'Please provide more detail — aim for 3–4 descriptive lines.' };
+  return { ok: true };
+}
+
+function showLanding() {
+  document.getElementById('landing').classList.remove('hidden');
+  document.getElementById('messages').classList.add('hidden');
+  document.getElementById('inputArea').classList.add('hidden');
+  document.getElementById('chatTitle').textContent = 'New Sourcing Event';
+  document.getElementById('stepIndicator').textContent = 'Welcome';
+}
+
+function showChat() {
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('messages').classList.remove('hidden');
+  document.getElementById('inputArea').classList.remove('hidden');
+}
+
+async function startChat(prompt) {
+  S.chatStarted = true;
+  S.userPrompt = prompt;
+  S.eventName = 'IT Equipment Sourcing — Bangalore — Aug 2026';
+  document.getElementById('chatTitle').textContent = S.eventName;
+  showChat();
+  addMsg('user', prompt);
+  S.step = 1;
+  saveState();
+  updateUI();
+  await ariaSay(`Thanks! I've parsed your requirement for <strong>Bangalore</strong>. Here's what I understood:`);
+  await ariaSay(metadataCard());
+}
 
 /* ── NLP Parser ── */
 function nlp(text) {
@@ -182,6 +253,7 @@ function addMsg(role, html) {
   saveState();
   appendMessage(role, html);
   scrollBottom();
+  if (role === 'aria') bindMessageEvents();
 }
 
 function appendMessage(role, html) {
@@ -255,13 +327,12 @@ function metadataCard() {
       <td>${li.location}</td>
     </tr>`).join('');
 
-  return `<p>I've captured your requirement. Here's what I understood:</p>
-  <div class="card">
+  return `<div class="card">
     <div class="card-header">📋 Requirement Summary</div>
     <div class="card-body">
       <div class="card-meta">
         <div class="meta-item"><label>Event Currency</label><span>INR (₹)</span></div>
-        <div class="meta-item"><label>Delivery Locations</label><span>Bangalore, Mumbai</span></div>
+        <div class="meta-item"><label>Delivery Location</label><span>Bangalore</span></div>
         <div class="meta-item"><label>Total Line Items</label><span>${LINE_ITEMS.length}</span></div>
       </div>
       <table class="data-table">
@@ -313,7 +384,7 @@ function rfqPreviewCard() {
         <div class="rfq-grid">
           <div class="rfq-field"><label>Event Name</label><span>${S.eventName}</span></div>
           <div class="rfq-field"><label>Currency</label><span>INR (₹)</span></div>
-          <div class="rfq-field"><label>Delivery Locations</label><span>Bangalore, Mumbai</span></div>
+          <div class="rfq-field"><label>Delivery Location</label><span>Bangalore</span></div>
           <div class="rfq-field"><label>Total Items</label><span>${LINE_ITEMS.length} line items</span></div>
           <div class="rfq-field"><label>Total Quantity</label><span>${LINE_ITEMS.reduce((s, l) => s + l.qty, 0)} units</span></div>
           <div class="rfq-field"><label>Category</label><span>IT Hardware & Accessories</span></div>
@@ -336,94 +407,146 @@ function rfqPreviewCard() {
 }
 
 function uploadCard() {
-  const done = S.uploadDone;
-  return `<p>${done ? 'Attachments uploaded successfully!' : 'You can upload supporting documents for this RFQ.'}</p>
+  const files = S.uploadedFiles || [];
+  const done = files.length > 0;
+  const fileList = files.map((f, i) => `
+    <div class="upload-file-item" data-idx="${i}">
+      <div class="file-info">📄 <strong>${esc(f.name)}</strong> <span style="color:#64748B">(${formatFileSize(f.size)})</span></div>
+      <button class="file-remove" data-remove="${i}">Remove</button>
+    </div>`).join('');
+
+  return `<p>${done ? `${files.length} file${files.length > 1 ? 's' : ''} attached successfully.` : 'Upload supporting documents for this RFQ — spec sheets, SOWs, or evaluation criteria.'}</p>
   <div class="card">
     <div class="card-header">📎 Attachments</div>
     <div class="card-body">
-      <div class="upload-zone ${done ? 'done' : ''}">
-        <div class="upload-icon">${done ? '✅' : '📁'}</div>
-        ${done ? '<strong>2 files uploaded</strong>' : '<p>Drag & drop files here, or type "upload" to simulate</p>'}
-        ${done ? `<div class="upload-files">
-          <div class="upload-file">📄 IT_Equipment_Spec_Sheet.pdf <span>(2.4 MB)</span></div>
-          <div class="upload-file">📄 Vendor_Evaluation_Criteria.pdf <span>(1.1 MB)</span></div>
-        </div>` : ''}
+      <div class="upload-wizard ${done ? 'done' : ''}" id="uploadZone" data-upload-zone>
+        <div class="upload-wizard-icon">${done ? '✅' : '📁'}</div>
+        <div class="upload-wizard-text">${done ? 'Files attached — click to add more' : 'Drag & drop files here, or click to browse'}</div>
+        <div class="upload-wizard-text" style="font-size:12px;margin-top:4px;">PDF, DOC, XLS, PPT, images up to 10 MB each</div>
+        <span class="upload-wizard-btn">Choose files</span>
       </div>
+      ${done ? `<div class="upload-file-list" id="uploadFileList">${fileList}</div>` : ''}
     </div>
   </div>
-  <p>${done ? 'Shall I pull price benchmarks next?' : 'Let me know when you are done, or say "skip" to move on.'}</p>`;
+  <p>${done ? 'Shall I pull price benchmarks next? Say "benchmarks" or "proceed".' : 'Attach your files, then say "done" when ready — or "skip" to continue without attachments.'}</p>`;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
 function benchmarkCard() {
-  const internal = [
-    { src: 'PO-2025-0847 · Dell Latitude', price: '₹72,500', conf: 92 },
-    { src: 'PO-2025-0612 · HP EliteBook', price: '₹74,200', conf: 88 },
-    { src: 'PO-2024-1203 · Dell Latitude', price: '₹69,800', conf: 85 },
-    { src: 'PO-2024-0891 · Lenovo ThinkPad', price: '₹71,000', conf: 82 },
-    { src: 'PO-2024-0445 · HP ProBook', price: '₹73,500', conf: 78 },
-  ];
-  const external = [
-    { src: 'Dell India Website', price: '₹78,900', conf: 70 },
-    { src: 'Amazon Business', price: '₹76,400', conf: 65 },
-    { src: 'Lenovo India Store', price: '₹75,200', conf: 68 },
-    { src: 'Flipkart Business', price: '₹77,800', conf: 60 },
-  ];
+  const internalRows = INTERNAL_BENCHMARKS.map(b => `
+    <tr>
+      <td><span class="po-badge">${b.po}</span></td>
+      <td>${b.date}</td>
+      <td>${b.supplier}</td>
+      <td>${b.item}</td>
+      <td>${formatPrice(b.price)}</td>
+      <td>${b.qty}</td>
+      <td><div class="conf-bar-cell"><div class="conf-bar-mini"><div class="fill ${confClass(b.conf)}" style="width:${b.conf}%"></div></div><span>${b.conf}%</span></div></td>
+    </tr>`).join('');
 
-  const benchRow = (b) => `
-    <div class="bench-row">
-      <span class="bench-source">${b.src}</span>
-      <div class="confidence-bar"><div class="confidence-fill" style="width:${b.conf}%"></div></div>
-      <span class="confidence-pct">${b.conf}%</span>
-      <span class="bench-price">${b.price}</span>
-    </div>`;
+  const externalRows = EXTERNAL_BENCHMARKS.map(b => `
+    <tr>
+      <td>${b.source}</td>
+      <td>${b.ref}</td>
+      <td>${formatPrice(b.price)}</td>
+      <td><div class="conf-bar-cell"><div class="conf-bar-mini"><div class="fill ${confClass(b.conf)}" style="width:${b.conf}%"></div></div><span>${b.conf}%</span></div></td>
+      <td><a href="https://${b.link}" target="_blank" rel="noopener" style="color:var(--primary);font-size:12px;">${b.link}</a></td>
+    </tr>`).join('');
 
-  return `<p>I've analysed internal PO history and external market data for comparable laptops:</p>
+  const minPct = 0;
+  const targetPct = ((S.targetPrice - BENCHMARK_MIN) / (BENCHMARK_MAX - BENCHMARK_MIN)) * 100;
+  const maxPct = 100;
+
+  return `<p>Here are the price benchmarks I found for your requirement — internal PO history and live external market data.</p>
   <div class="card">
-    <div class="card-header">📊 Price Benchmarks</div>
+    <div class="card-header bench-card-header">
+      <span>📊 PRICE BENCHMARKING</span>
+      <span class="bench-badge">AI Analysed</span>
+    </div>
     <div class="card-body">
-      <div class="bench-section">
-        <h4>Internal PO History (5 records)</h4>
-        ${internal.map(benchRow).join('')}
-      </div>
-      <div class="bench-section">
-        <h4>External Market Sources</h4>
-        ${external.map(benchRow).join('')}
-      </div>
-      <div class="price-scale">
-        <span style="font-size:11px;color:#64748B;">₹65K</span>
-        <div class="scale-bar"><div class="scale-marker" style="left:62%"></div></div>
-        <span style="font-size:11px;color:#64748B;">₹85K</span>
-      </div>
-      <div class="bench-recommend">
-        <strong>Recommended benchmark: ₹70,000/unit</strong> — based on weighted analysis of internal POs (60% weight) and external sources (40% weight). This gives you a fair baseline for supplier evaluation.
+      <div class="bench-section-title">📁 Internal — Historical PO References</div>
+      <table class="data-table">
+        <thead><tr><th>PO Number</th><th>Date</th><th>Supplier</th><th>Item</th><th>Unit Price (₹)</th><th>Qty</th><th>Confidence</th></tr></thead>
+        <tbody>${internalRows}</tbody>
+      </table>
+
+      <div class="bench-section-title">🌐 External — Market References</div>
+      <table class="data-table">
+        <thead><tr><th>Source</th><th>Reference</th><th>Unit Price (₹)</th><th>Confidence</th><th>Link</th></tr></thead>
+        <tbody>${externalRows}</tbody>
+      </table>
+
+      <div class="bench-target-section">
+        <div class="bench-section-title">🎯 Recommended Target Price</div>
+        <div class="bench-scale-labels">
+          <span>Min: ${formatPrice(BENCHMARK_MIN)}</span>
+          <span>Target: ${formatPrice(S.targetPrice)}</span>
+          <span>Max: ${formatPrice(BENCHMARK_MAX)}</span>
+        </div>
+        <div class="bench-target-scale">
+          <div class="bench-scale-line"></div>
+          <div class="bench-scale-dot min" style="left:${minPct}%"></div>
+          <div class="bench-scale-dot target" style="left:${targetPct}%"></div>
+          <div class="bench-scale-dot max" style="left:${maxPct}%"></div>
+        </div>
+        <div class="bench-target-text">
+          Based on <strong>5 internal POs</strong> and <strong>4 market references</strong>, I recommend setting a target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong> — this gives you room to negotiate while remaining competitive. This target will be used to analyse bids during response monitoring.
+        </div>
       </div>
     </div>
   </div>
-  <p>Ready to identify suppliers for this RFQ?</p>`;
+  <p>Based on this, I recommend a target of <strong>${formatPrice(S.targetPrice)}/unit</strong>. Say "proceed" when you are ready to move to supplier discovery.</p>`;
+}
+
+function supplierTableRow(s) {
+  const rec = s.recommended ? ' recommended-row' : '';
+  const badges = s.recommended ? ' <span class="tag recommended">★ Aria Recommends</span>' : '';
+  const srcTag = s.source === 'Internal DB'
+    ? '<span class="tag internal">Internal DB</span>'
+    : '<span class="tag ai">AI Discovered</span>';
+  return `<tr class="${rec}">
+    <td><strong>${s.id}</strong></td>
+    <td><div class="sup-name">${s.name}${badges}</div></td>
+    <td>${srcTag}</td>
+    <td>${s.onTime}%</td>
+    <td>${s.pastPOs || '—'}</td>
+    <td>${s.avgDiscount}%</td>
+    <td><div class="sup-rationale">💡 ${s.rationale}</div></td>
+    <td><div class="sup-contact">👤 ${s.contact}<br>✉️ ${s.email}</div></td>
+    <td><strong style="color:var(--primary)">${s.score}</strong>/100</td>
+  </tr>`;
 }
 
 function supplierCard() {
-  const rows = SUPPLIER_DATA.map(s => `
-    <div class="supplier-row ${s.recommended ? 'recommended' : ''}">
-      <div class="supplier-num">${s.id}</div>
-      <div class="supplier-info">
-        <div class="supplier-name">${s.name} ${s.recommended ? '<span class="tag recommended">RECOMMENDED</span>' : ''}</div>
-        <div class="supplier-tags">${s.tags.map(t => `<span class="tag ${t === 'Internal' ? 'internal' : 'ai'}">${t}</span>`).join('')}</div>
-        <div class="supplier-meta">${s.meta}</div>
-        <div class="supplier-rationale">${s.rationale}</div>
-        <div class="supplier-contact">${s.contact} · ${s.email}</div>
-      </div>
-      <div class="supplier-score">
-        <div class="score-value">${s.score}</div>
-        <div class="score-label">Score</div>
-      </div>
-    </div>`).join('');
+  const internal = SUPPLIER_DATA.filter(s => s.source === 'Internal DB');
+  const ai = SUPPLIER_DATA.filter(s => s.source === 'AI Discovered');
 
-  return `<p>Based on your requirements, I've identified 7 suppliers. Say "add 1, 2, 5" or "add all" to invite them:</p>
+  return `<p>I've identified <strong>7 suppliers</strong> for your Bangalore requirement. Say "add 1, 2, 5" or "add all" to invite them:</p>
   <div class="card">
-    <div class="card-header">🏢 Supplier Recommendations</div>
+    <div class="card-header bench-card-header">
+      <span>🏢 SUPPLIER DISCOVERY</span>
+      <span class="bench-badge">7 suppliers found</span>
+    </div>
     <div class="card-body">
-      <div class="supplier-list">${rows}</div>
+      <div class="section-divider">📁 Internal Database Vendors (1–4)</div>
+      <div class="supplier-table-wrap">
+        <table class="supplier-table">
+          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Avg Discount</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
+          <tbody>${internal.map(supplierTableRow).join('')}</tbody>
+        </table>
+      </div>
+      <div class="section-divider">🤖 AI Recommended — New Suppliers (5–7)</div>
+      <div class="supplier-table-wrap">
+        <table class="supplier-table">
+          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Avg Discount</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
+          <tbody>${ai.map(supplierTableRow).join('')}</tbody>
+        </table>
+      </div>
     </div>
   </div>
   <p>Which suppliers would you like to invite? Reference by number (e.g. "add 1, 2, 5") or say "add all".</p>`;
@@ -465,21 +588,46 @@ function publishCard() {
   <p>What would you like to do? Say "1", "2", or "3", or use the quick-reply chips below.</p>`;
 }
 
+function vsBenchmark(price) {
+  const diff = price - S.targetPrice;
+  const pct = ((diff / S.targetPrice) * 100).toFixed(1);
+  if (diff < -500) return `<span class="vs-benchmark below">${formatPrice(Math.abs(diff))} below target (${pct}%)</span>`;
+  if (diff > 500) return `<span class="vs-benchmark above">${formatPrice(diff)} above target (+${pct}%)</span>`;
+  return `<span class="vs-benchmark at">At target</span>`;
+}
+
 function monitorCard() {
+  const bids = [
+    { s: 'Dell Technologies', up: 68200, tv: '₹68.5L', model: 'Latitude 5540', del: '7 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹4,200', score: 94 },
+    { s: 'HP Enterprise', up: 69800, tv: '₹69.8L', model: 'EliteBook 840 G10', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹4,800', score: 88 },
+    { s: 'Lenovo India', up: 70500, tv: '₹70.5L', model: 'ThinkPad T14 Gen 4', del: '12 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹3,900', score: 85 },
+    { s: 'Ingram Micro', up: 71200, tv: '₹71.2L', model: 'Dell Latitude 5540', del: '9 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 60', amc: '₹4,500', score: 82 },
+  ];
+
+  const lowest = bids.reduce((a, b) => a.up < b.up ? a : b);
+  const savings = ((S.targetPrice - lowest.up) * 100) / 100000;
+  const savingsStr = savings >= 1 ? `₹${savings.toFixed(1)}L` : `₹${Math.round(savings * 100000).toLocaleString('en-IN')}`;
+
+  const compRows = bids.map(r => `<tr>
+    <td>${r.s}</td>
+    <td>${formatPrice(r.up)}<br>${vsBenchmark(r.up)}</td>
+    <td>${r.tv}</td>
+    <td>${r.model}</td>
+    <td>${r.del}</td>
+    <td>${r.war}</td>
+    <td>${r.gst}</td>
+    <td>${r.pay}</td>
+    <td>${r.amc}</td>
+    <td>${r.score}</td>
+  </tr>`).join('');
+
   const insights = `
     <div class="insight-chips">
-      <div class="insight-chip">Lowest Bid: <span class="chip-value">Dell · ₹68,200/unit</span></div>
-      <div class="insight-chip">Est. Savings: <span class="chip-value">₹1.5L (2.1%)</span></div>
-      <div class="insight-chip">Fastest Delivery: <span class="chip-value">Dell · 7 days</span></div>
+      <div class="insight-chip">Target Benchmark: <span class="chip-value">${formatPrice(S.targetPrice)}/unit</span></div>
+      <div class="insight-chip">Lowest Bid: <span class="chip-value">${lowest.s} · ${formatPrice(lowest.up)}</span></div>
+      <div class="insight-chip">Est. Savings: <span class="chip-value">${savingsStr} vs target</span></div>
       <div class="insight-chip">Responses: <span class="chip-value">4 of 7</span></div>
     </div>`;
-
-  const compRows = [
-    { s: 'Dell Technologies', up: '₹68,200', tv: '₹68.5L', model: 'Latitude 5540', del: '7 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹4,200', score: 94 },
-    { s: 'HP Enterprise', up: '₹69,800', tv: '₹69.8L', model: 'EliteBook 840 G10', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹4,800', score: 88 },
-    { s: 'Lenovo India', up: '₹70,500', tv: '₹70.5L', model: 'ThinkPad T14 Gen 4', del: '12 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹3,900', score: 85 },
-    { s: 'Ingram Micro', up: '₹71,200', tv: '₹71.2L', model: 'Dell Latitude 5540', del: '9 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 60', amc: '₹4,500', score: 82 },
-  ].map(r => `<tr><td>${r.s}</td><td>${r.up}</td><td>${r.tv}</td><td>${r.model}</td><td>${r.del}</td><td>${r.war}</td><td>${r.gst}</td><td>${r.pay}</td><td>${r.amc}</td><td>${r.score}</td></tr>`).join('');
 
   const scorecard = (name, bars) => `
     <div class="scorecard">
@@ -496,10 +644,10 @@ function monitorCard() {
   const hpBars = [{ l: 'Price', v: 82 }, { l: 'Delivery', v: 78 }, { l: 'Warranty', v: 90 }, { l: 'Hist. Perf', v: 85 }, { l: 'Compliance', v: 88 }];
   const lenovoBars = [{ l: 'Price', v: 78 }, { l: 'Delivery', v: 72 }, { l: 'Warranty', v: 80 }, { l: 'Hist. Perf', v: 82 }, { l: 'Compliance', v: 86 }];
 
-  return `<p>4 of 7 suppliers have responded. Here's the analysis:</p>
+  return `<p>4 of 7 suppliers have responded. Here's the bid analysis against your target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong>:</p>
   ${insights}
   <div class="card">
-    <div class="card-header">📊 Bid Comparison</div>
+    <div class="card-header">📊 Bid Comparison <span class="benchmark-ref">Target: ${formatPrice(S.targetPrice)}/unit</span></div>
     <div class="card-body" style="overflow-x:auto;">
       <table class="data-table comparison-table">
         <thead><tr><th>Supplier</th><th>Unit Price</th><th>Total Value</th><th>Model Offered</th><th>Delivery</th><th>Warranty</th><th>GST Incl.</th><th>Payment</th><th>AMC/yr</th><th>Score</th></tr></thead>
@@ -511,7 +659,7 @@ function monitorCard() {
         ${scorecard('Lenovo India', lenovoBars)}
       </div>
       <div class="rec-banner">
-        <strong>Recommendation: Award to Dell Technologies</strong> — Dell offers the lowest unit price (₹68,200 vs HP's ₹69,800), fastest delivery (7 days), and highest composite score (94). Estimated savings of <strong>₹1.5L</strong> against benchmark. HP is a strong alternative if warranty terms are prioritised.
+        <strong>Recommendation: Award to Dell Technologies</strong> — Dell bids <strong>${formatPrice(lowest.up)}/unit</strong>, which is <strong>${formatPrice(S.targetPrice - lowest.up)} below</strong> your ${formatPrice(S.targetPrice)} target benchmark. Fastest delivery (7 days) and highest composite score (94). Estimated savings of <strong>${savingsStr}</strong> against benchmark.
       </div>
     </div>
   </div>
@@ -571,13 +719,8 @@ async function handleInput(text) {
   }
 }
 
-async function handleStep0(intent) {
-  if (intent.type === 'requirement' || intent.type === 'unknown' || intent.type === 'confirm') {
-    S.step = 1;
-    saveState();
-    updateUI();
-    await ariaSay(metadataCard());
-  }
+async function handleStep0(intent, text) {
+  if (!S.chatStarted) return;
 }
 
 async function handleStep1(intent) {
@@ -621,19 +764,25 @@ async function handleStep3(intent) {
 }
 
 async function handleStep4(intent) {
-  if (intent.type === 'upload' || intent.type === 'confirm') {
+  if (intent.type === 'upload') {
+    document.getElementById('fileInput').click();
+    return;
+  }
+  if ((intent.type === 'confirm' || intent.type === 'unknown') && S.uploadedFiles.length > 0) {
     S.uploadDone = true;
     saveState();
-    await ariaSay(uploadCard());
     S.step = 5;
     saveState();
     updateUI();
+    await ariaSay(`Great — ${S.uploadedFiles.length} file${S.uploadedFiles.length > 1 ? 's' : ''} attached. Pulling price benchmarks now…`);
     await ariaSay(benchmarkCard());
   } else if (intent.type === 'benchmark' || intent.type === 'skip') {
     S.step = 5;
     saveState();
     updateUI();
     await ariaSay(benchmarkCard());
+  } else if (intent.type === 'confirm' && S.uploadedFiles.length === 0) {
+    await ariaSay(`No files attached yet. Click the upload area to browse, or say "skip" to continue without attachments.`);
   }
 }
 
@@ -721,9 +870,57 @@ window.closeAwardModal = function () {
   document.getElementById('awardModal').classList.remove('open');
 };
 
-/* ── Welcome ── */
-async function showWelcome() {
-  await ariaSay(`Hi, I'm <strong>Aria</strong> — your AI sourcing copilot. What would you like to source today?`);
+/* ── File Upload ── */
+function handleFiles(fileList) {
+  const maxSize = 10 * 1024 * 1024;
+  for (const file of fileList) {
+    if (file.size > maxSize) continue;
+    if (!S.uploadedFiles.find(f => f.name === file.name && f.size === file.size)) {
+      S.uploadedFiles.push({ name: file.name, size: file.size, type: file.type });
+    }
+  }
+  S.uploadDone = S.uploadedFiles.length > 0;
+  saveState();
+  refreshUploadCard();
+}
+
+function refreshUploadCard() {
+  const msgs = document.getElementById('messages');
+  const cards = msgs.querySelectorAll('.aria-content');
+  for (const card of cards) {
+    if (card.querySelector('[data-upload-zone]')) {
+      card.innerHTML = uploadCard();
+      bindUploadEvents();
+      return;
+    }
+  }
+}
+
+function bindUploadEvents() {
+  const zone = document.querySelector('[data-upload-zone]');
+  if (!zone) return;
+  zone.addEventListener('click', () => document.getElementById('fileInput').click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  });
+  document.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.remove, 10);
+      S.uploadedFiles.splice(idx, 1);
+      S.uploadDone = S.uploadedFiles.length > 0;
+      saveState();
+      refreshUploadCard();
+    });
+  });
+}
+
+function bindMessageEvents() {
+  bindUploadEvents();
 }
 
 /* ── UI Updates ── */
@@ -748,11 +945,18 @@ function updateUI() {
 }
 
 function render() {
+  if (S.chatStarted) {
+    showChat();
+    document.getElementById('chatTitle').textContent = S.eventName;
+  } else {
+    showLanding();
+  }
   const el = document.getElementById('messages');
   el.innerHTML = '';
   S.messages.forEach(m => appendMessage(m.role, m.html));
   updateUI();
   scrollBottom();
+  bindMessageEvents();
 }
 
 /* ── Demo Navigator ── */
@@ -777,10 +981,14 @@ function initDemoNav() {
 async function jumpToStep(target) {
   S = defaultState();
   S.step = target;
+  S.chatStarted = true;
+  S.userPrompt = 'We need 80 business laptops for new employees in Bangalore.\nIntel i7, 16GB RAM, 512GB SSD, Windows 11 Pro.\nDelivery within 3 weeks to Bangalore.\nInclude docking stations and 3-year onsite warranty.';
+  S.eventName = 'IT Equipment Sourcing — Bangalore — Aug 2026';
+  S.uploadedFiles = [{ name: 'IT_Equipment_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' }];
 
   if (target >= 1) {
-    S.messages.push({ role: 'user', html: 'Source 80 laptops for Bangalore & Mumbai', t: now() });
-    S.messages.push({ role: 'aria', html: metadataCard(), t: now() });
+    S.messages.push({ role: 'user', html: S.userPrompt, t: now() });
+    S.messages.push({ role: 'aria', html: `<p>Thanks! I've parsed your requirement for <strong>Bangalore</strong>. Here's what I understood:</p>${metadataCard()}`, t: now() });
   }
   if (target >= 2) {
     S.messages.push({ role: 'user', html: 'Yes, looks good', t: now() });
@@ -791,11 +999,15 @@ async function jumpToStep(target) {
     S.messages.push({ role: 'aria', html: rfqPreviewCard(), t: now() });
   }
   if (target >= 4) {
+    S.uploadDone = true;
+    S.uploadedFiles = [
+      { name: 'IT_Equipment_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' },
+      { name: 'Vendor_Evaluation_Criteria.pdf', size: 1100000, type: 'application/pdf' },
+    ];
     S.messages.push({ role: 'user', html: 'Upload attachments', t: now() });
     S.messages.push({ role: 'aria', html: uploadCard(), t: now() });
   }
   if (target >= 5) {
-    S.uploadDone = true;
     S.messages.push({ role: 'user', html: 'Show price benchmarks', t: now() });
     S.messages.push({ role: 'aria', html: benchmarkCard(), t: now() });
   }
@@ -844,8 +1056,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') send();
   });
 
+  document.getElementById('fileInput').addEventListener('change', e => {
+    handleFiles(e.target.files);
+    e.target.value = '';
+  });
+
+  document.getElementById('landingSubmit').addEventListener('click', () => {
+    const prompt = document.getElementById('landingPrompt').value;
+    const hint = document.getElementById('landingHint');
+    const v = validatePrompt(prompt);
+    if (!v.ok) {
+      hint.textContent = v.msg;
+      hint.classList.add('error');
+      return;
+    }
+    hint.classList.remove('error');
+    startChat(prompt);
+  });
+
+  document.querySelectorAll('.landing-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.getElementById('landingPrompt').value = chip.dataset.prompt;
+      document.getElementById('landingHint').classList.remove('error');
+    });
+  });
+
   initDemoNav();
   render();
-
-  if (S.messages.length === 0) showWelcome();
 });
