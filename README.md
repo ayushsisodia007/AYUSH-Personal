@@ -4,9 +4,9 @@ A client-side vanilla HTML/CSS/JS prototype for an AI-powered conversational sou
 
 ## Quick Start
 
-**Live demo:** https://cdn.jsdelivr.net/gh/ayushsisodia007/AYUSH-Personal@gh-pages/index.html
+**Live demo:** https://ayushsisodia007.github.io/AYUSH-Personal/
 
-(GitHub Pages mirror, once enabled in repo Settings → Pages → `gh-pages` branch): https://ayushsisodia007.github.io/AYUSH-Personal/
+> **One-time setup:** Open [Repository Settings → Pages](https://github.com/ayushsisodia007/AYUSH-Personal/settings/pages), set **Source** to **Deploy from a branch**, choose branch **`gh-pages`** and folder **`/ (root)`**, then click **Save**. The site goes live in ~1 minute.
 
 Or open `aria-sourcing-copilot/index.html` locally in your browser. No build step, no npm, no backend required.
 
