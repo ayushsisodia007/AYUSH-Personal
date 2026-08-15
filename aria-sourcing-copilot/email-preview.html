@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Preview — Supplier RFQ Invitation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #E2E8F0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .preview-shell {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .preview-header {
+      background: #fff;
+      border: 1px solid #CBD5E1;
+      border-radius: 12px 12px 0 0;
+      padding: 16px 20px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .preview-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 12px;
+    }
+    .meta-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 8px 12px;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .meta-row label { color: #64748B; font-weight: 600; }
+    .meta-row span { color: #0F172A; }
+    .subject { font-size: 18px; font-weight: 700; color: #0F172A; margin-top: 14px; }
+    .preview-body {
+      background: #fff;
+      border: 1px solid #CBD5E1;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(15,23,42,.08);
+    }
+    iframe {
+      width: 100%;
+      height: 980px;
+      border: 0;
+      display: block;
+      background: #F1F5F9;
+    }
+    .note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #1E40AF;
+    }
+    .note strong { color: #1E3A8A; }
+  </style>
+</head>
+<body>
+  <div class="preview-shell">
+    <div class="preview-header">
+      <div class="preview-title">Sample Supplier Invitation Email</div>
+      <div class="meta-row"><label>To</label><span>Anita Desai &lt;anita.desai@featherlite.com&gt;</span></div>
+      <div class="meta-row"><label>From</label><span>Aria Sourcing &lt;sourcing@aria-demo.com&gt;</span></div>
+      <div class="meta-row"><label>Reply-To</label><span>sourcing@aria-demo.com</span></div>
+      <div class="subject">[RFQ Invitation] Office Chairs Sourcing — Bangalore — Submit bid by 21 Aug 2026</div>
+    </div>
+    <div class="preview-body">
+      <iframe src="templates/supplier-rfq-email.html" title="Supplier RFQ email template"></iframe>
+    </div>
+    <div class="note">
+      <strong>Prototype note:</strong> Each invited supplier receives a unique bid link with an event ID, supplier ID, and secure token.
+      The sample link above points to the supplier bid page we will build next:
+      <code>supplier/bid.html?event=RFQ-2026-0815-CHR&amp;supplier=1&amp;token=flt-demo-7x9k2m</code>
+    </div>
+  </div>
+</body>
+</html>
