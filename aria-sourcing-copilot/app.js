@@ -4,7 +4,12 @@
    Aria — AI Sourcing Copilot  ·  app.js
    ═══════════════════════════════════════════ */
 
-const STATE_KEY = 'aria_v6_state';
+const STATE_KEY = 'aria_v7_state';
+const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state'];
+
+const EVENT_CATEGORY = 'Office Furniture';
+const EVENT_ITEM_NAME = 'Ergonomic Office Chair';
+const EVENT_ITEM_DESC = 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, minimum 3-year warranty';
 
 const TARGET_PRICE = 14500;
 const BENCHMARK_MIN = 12800;
@@ -68,17 +73,17 @@ const EXTERNAL_BENCHMARKS = [
 ];
 
 const LINE_ITEMS = [
-  { item: 'Ergonomic Office Chair', desc: 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, 3-year warranty', uom: 'Units', qty: 120, category: 'Office Furniture', location: 'Bangalore' },
+  { item: EVENT_ITEM_NAME, desc: EVENT_ITEM_DESC, uom: 'Units', qty: 120, category: EVENT_CATEGORY, location: 'Bangalore' },
 ];
 
 const RFQ_QUESTIONS = [
-  'Please confirm the exact chair model and specifications you are quoting for.',
-  'What is your proposed delivery schedule to Bangalore? Please provide week-wise plan.',
-  'Do you include on-site assembly and installation? If yes, please provide pricing.',
-  'What is the warranty period? Please confirm minimum 3-year warranty coverage.',
+  'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).',
+  'What is your proposed delivery schedule to Bangalore for 120 chairs? Please provide a week-wise plan.',
+  'Do you include on-site assembly and installation at our Bangalore office? If yes, please provide pricing.',
+  'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).',
   'Please confirm GST treatment and provide your GSTIN for invoicing.',
   'What are your payment terms? Do you accept 30/60/90 day credit?',
-  'Please attach product datasheets, ergonomic certifications, and BIS compliance documents.',
+  'Please attach product datasheets, ergonomic certifications, load-test reports, and BIS compliance documents.',
 ];
 
 const STEP_LABELS = [
@@ -95,7 +100,7 @@ const CHIPS = {
   4: ['Done uploading'],
   5: ['Proceed to benchmarks', 'Yes, proceed'],
   6: ['Show suppliers', 'Yes, proceed'],
-  7: ['Add 1, 2, 5', 'Add all', 'Show more details'],
+  7: ['Add 1, 2, 3', 'Add all', 'Show more details'],
   8: ['Yes, 21 Aug works', 'Change to 25 Aug'],
   9: [],
   10: ['Proceed to award'],
@@ -110,7 +115,8 @@ function defaultState() {
     chatStarted: false,
     messages: [],
     userPrompt: '',
-    eventName: 'Office Chairs Sourcing — Aug 2026',
+    eventName: 'Office Chairs Sourcing — Bangalore — Aug 2026',
+    eventCategory: EVENT_CATEGORY,
     suppliers: {},
     selectedNums: [],
     awardDone: false,
@@ -134,10 +140,40 @@ function defaultState() {
 let responsesTimer = null;
 const RESPONSES_MSG = '<p>🎉 4 supplier responses received.</p><p>I\'ve received responses in different formats. Would you like me to analyze and compare them??</p>';
 
+function isStaleHardwareData(value) {
+  const blob = JSON.stringify(value || '').toLowerCase();
+  return /\b(laptop|laptops|dell|hp enterprise|intel|windows|512gb|16gb ram|it hardware|it equipment|latitude|thinkpad|elitebook|ingram micro|business laptop)\b/.test(blob);
+}
+
+function normalizeLineItems(items) {
+  if (!items || !items.length || isStaleHardwareData(items)) return LINE_ITEMS.map(li => ({ ...li }));
+  return items.map(li => ({
+    item: EVENT_ITEM_NAME,
+    desc: li.desc && !isStaleHardwareData(li.desc) ? li.desc : EVENT_ITEM_DESC,
+    uom: li.uom || 'Units',
+    qty: li.qty || 120,
+    category: EVENT_CATEGORY,
+    location: li.location || 'Bangalore',
+  }));
+}
+
 function loadState() {
+  LEGACY_STATE_KEYS.forEach(key => localStorage.removeItem(key));
   try {
     const raw = localStorage.getItem(STATE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return defaultState();
+    const state = JSON.parse(raw);
+    if (isStaleHardwareData(state)) return defaultState();
+    state.lineItems = normalizeLineItems(state.lineItems);
+    state.eventCategory = EVENT_CATEGORY;
+    if (!state.eventName || isStaleHardwareData(state.eventName)) {
+      const loc = (state.locations && state.locations[0]) || 'Bangalore';
+      state.eventName = `Office Chairs Sourcing — ${loc} — Aug 2026`;
+    }
+    state.targetPrice = TARGET_PRICE;
+    state.benchmarkMin = BENCHMARK_MIN;
+    state.benchmarkMax = BENCHMARK_MAX;
+    return state;
   } catch (_) { /* ignore */ }
   return defaultState();
 }
@@ -149,6 +185,7 @@ function saveState() {
 function hardReset() {
   if (responsesTimer) clearTimeout(responsesTimer);
   responsesTimer = null;
+  LEGACY_STATE_KEYS.forEach(key => localStorage.removeItem(key));
   localStorage.removeItem(STATE_KEY);
   S = defaultState();
   showLanding();
@@ -221,7 +258,7 @@ function parseRequirement(text) {
   if (/seat\s*height|height\s*adjust/i.test(t)) specs.push('Adjustable seat height');
   if (/3\s*year|three\s*year|minimum\s*3/i.test(t)) specs.push('Minimum 3-year warranty');
   if (/ergonomic/i.test(t)) specs.push('Ergonomic design');
-  const desc = specs.length ? specs.join(', ') : 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, minimum 3-year warranty';
+  const desc = specs.length ? specs.join(', ') : EVENT_ITEM_DESC;
 
   const lineItems = [];
   const locRegex = /(\d+)\s+(?:should be (?:delivered )?to|to be delivered to|to|for)\s+(\w+)(?:\s*\(([^)]+)\))?/gi;
@@ -230,11 +267,11 @@ function parseRequirement(text) {
     const city = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
     const office = match[3] ? ` (${match[3]})` : '';
     lineItems.push({
-      item: 'Ergonomic Office Chair',
+      item: EVENT_ITEM_NAME,
       desc,
       uom: 'Units',
       qty: parseInt(match[1], 10),
-      category: 'Office Furniture',
+      category: EVENT_CATEGORY,
       location: city + office,
     });
   }
@@ -247,11 +284,11 @@ function parseRequirement(text) {
         const office = seg.match(/\(([^)]+)\)/);
         const city = m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase();
         lineItems.push({
-          item: 'Ergonomic Office Chair',
+          item: EVENT_ITEM_NAME,
           desc,
           uom: 'Units',
           qty: parseInt(m[1], 10),
-          category: 'Office Furniture',
+          category: EVENT_CATEGORY,
           location: office ? `${city} (${office[1]})` : city,
         });
       }
@@ -259,12 +296,12 @@ function parseRequirement(text) {
   }
 
   if (lineItems.length === 0) {
-    const qtyMatch = t.match(/(\d+)\s*(?:ergonomic\s+)?(?:office\s+)?chairs?|(\d+)\s*(?:business\s+)?laptops?/i);
-    const qty = qtyMatch ? parseInt(qtyMatch[1] || qtyMatch[2], 10) : 120;
+    const qtyMatch = t.match(/(\d+)\s*(?:ergonomic\s+)?(?:office\s+)?chairs?/i);
+    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 120;
     let location = 'Bangalore';
     if (/\bmumbai\b/i.test(t)) location = 'Mumbai';
     else if (/\bbangalore\b/i.test(t)) location = 'Bangalore';
-    lineItems.push({ item: 'Ergonomic Office Chair', desc, uom: 'Units', qty, category: 'Office Furniture', location });
+    lineItems.push({ item: EVENT_ITEM_NAME, desc, uom: 'Units', qty, category: EVENT_CATEGORY, location });
   }
 
   const locations = [...new Set(lineItems.map(li => li.location))];
@@ -272,7 +309,11 @@ function parseRequirement(text) {
 }
 
 function getLineItems() {
-  return S.lineItems && S.lineItems.length ? S.lineItems : LINE_ITEMS;
+  return normalizeLineItems(S.lineItems && S.lineItems.length ? S.lineItems : LINE_ITEMS);
+}
+
+function getEventCategory() {
+  return S.eventCategory || EVENT_CATEGORY;
 }
 
 function getLocationsLabel() {
@@ -300,6 +341,7 @@ async function startChat(prompt) {
   S.userPrompt = prompt;
   S.lineItems = parsed.lineItems;
   S.locations = parsed.locations;
+  S.eventCategory = EVENT_CATEGORY;
   const locLabel = parsed.locations.join(' & ');
   S.eventName = `Office Chairs Sourcing — ${locLabel} — Aug 2026`;
   document.getElementById('chatTitle').textContent = S.eventName;
@@ -460,6 +502,7 @@ function ariaSay(html, delay) {
 /* ── Card Builders ── */
 function metadataCard() {
   const items = getLineItems();
+  const totalQty = getTotalQty();
   const rows = items.map(li => `
     <tr>
       <td>${li.item}</td>
@@ -474,6 +517,9 @@ function metadataCard() {
     <div class="card-header">📋 Requirement Summary</div>
     <div class="card-body">
       <div class="card-meta">
+        <div class="meta-item"><label>Category</label><span>${getEventCategory()}</span></div>
+        <div class="meta-item"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
+        <div class="meta-item"><label>Total Quantity</label><span>${totalQty} chairs</span></div>
         <div class="meta-item"><label>Event Currency</label><span>INR (₹)</span></div>
         <div class="meta-item"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
         <div class="meta-item"><label>Total Line Items</label><span>${items.length}</span></div>
@@ -488,18 +534,24 @@ function metadataCard() {
 }
 
 function eventDetailsCard() {
+  const items = getLineItems();
+  const totalQty = getTotalQty();
   const questions = RFQ_QUESTIONS.map((q, i) => `
     <div class="rfq-question">
       <div class="q-num">Q${i + 1}</div>
       <div class="q-text">${q}</div>
     </div>`).join('');
 
-  return `<p>Great! Let me set up the event details and RFQ questions.</p>
+  return `<p>Great! Let me set up the event details and RFQ questions for your <strong>${getEventCategory()}</strong> requirement.</p>
   <div class="card">
     <div class="card-header">📝 Event Details</div>
     <div class="card-body">
       <div class="card-meta">
         <div class="meta-item meta-item-wide"><label>Event Name</label><input type="text" value="${esc(S.eventName)}" id="eventNameInput" class="event-name-input"></div>
+        <div class="meta-item"><label>Category</label><span>${getEventCategory()}</span></div>
+        <div class="meta-item"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
+        <div class="meta-item"><label>Quantity</label><span>${totalQty} chairs</span></div>
+        <div class="meta-item"><label>Delivery</label><span>${getLocationsLabel()}</span></div>
       </div>
       <h4 style="font-size:13px;font-weight:600;margin:16px 0 8px;">RFQ Questions</h4>
       ${questions}
@@ -510,28 +562,30 @@ function eventDetailsCard() {
 
 function rfqPreviewCard() {
   const items = getLineItems();
+  const totalQty = getTotalQty();
   const itemRows = items.map((li, i) => `
     <tr><td>${i + 1}</td><td>${li.item}</td><td>${li.desc}</td><td>${li.uom}</td><td>${li.qty}</td><td>${li.location}</td></tr>`).join('');
 
   const qRows = RFQ_QUESTIONS.map((q, i) => `
     <div class="rfq-question"><div class="q-num">Q${i + 1}</div><div class="q-text">${q}</div></div>`).join('');
 
-  return `<p>Here's your RFQ document preview:</p>
+  return `<p>Here's your RFQ document preview for <strong>${totalQty} ergonomic office chairs</strong>:</p>
   <div class="rfq-doc">
     <div class="rfq-header">
       <h2>${S.eventName}</h2>
-      <p>Request for Quotation · Issued ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p>Request for Quotation · ${getEventCategory()} · Issued ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     </div>
     <div class="rfq-body">
       <div class="rfq-section">
         <h3>Event Details</h3>
         <div class="rfq-grid">
           <div class="rfq-field"><label>Event Name</label><span>${S.eventName}</span></div>
+          <div class="rfq-field"><label>Category</label><span>${getEventCategory()}</span></div>
+          <div class="rfq-field"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
           <div class="rfq-field"><label>Currency</label><span>INR (₹)</span></div>
           <div class="rfq-field"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
-          <div class="rfq-field"><label>Total Items</label><span>${items.length} line items</span></div>
-          <div class="rfq-field"><label>Total Quantity</label><span>${items.reduce((s, l) => s + l.qty, 0)} units</span></div>
-          <div class="rfq-field"><label>Category</label><span>Office Furniture</span></div>
+          <div class="rfq-field"><label>Total Items</label><span>${items.length} line item${items.length > 1 ? 's' : ''}</span></div>
+          <div class="rfq-field"><label>Total Quantity</label><span>${totalQty} chairs</span></div>
         </div>
       </div>
       <div class="rfq-section">
@@ -624,10 +678,10 @@ function benchmarkCard() {
   const targetPct = ((S.targetPrice - BENCHMARK_MIN) / (BENCHMARK_MAX - BENCHMARK_MIN)) * 100;
   const maxPct = 100;
 
-  return `<p>Here are the price benchmarks I found for your requirement — internal PO history and live external market data.</p>
+  return `<p>Here are the price benchmarks for <strong>ergonomic office chairs</strong> — internal PO history and live external market data for mesh executive seating.</p>
   <div class="card">
     <div class="card-header bench-card-header">
-      <span>📊 PRICE BENCHMARKING</span>
+      <span>📊 PRICE BENCHMARKING — ${getEventCategory()}</span>
       <span class="bench-badge">AI Analysed</span>
     </div>
     <div class="card-body">
@@ -657,12 +711,12 @@ function benchmarkCard() {
           <div class="bench-scale-dot max" style="left:${maxPct}%"></div>
         </div>
         <div class="bench-target-text">
-          Based on <strong>5 internal POs</strong> and <strong>4 market references</strong>, I recommend setting a target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong> — this gives you room to negotiate while remaining competitive. This target will be used to analyse bids during response monitoring.
+          Based on <strong>5 internal chair POs</strong> and <strong>4 market references</strong> for ergonomic mesh chairs, I recommend a target benchmark of <strong>${formatPrice(S.targetPrice)}/chair</strong> — this gives you room to negotiate while remaining competitive. This target will be used to analyse supplier responses during bid monitoring.
         </div>
       </div>
     </div>
   </div>
-  <p>Based on this, I recommend a target of <strong>${formatPrice(S.targetPrice)}/unit</strong>. Say "proceed" when you are ready to move to supplier discovery.</p>`;
+  <p>Based on this, I recommend a target of <strong>${formatPrice(S.targetPrice)}/chair</strong> for ${getTotalQty()} ergonomic office chairs. Say "proceed" when you are ready to move to supplier discovery.</p>`;
 }
 
 function supplierTableRow(s) {
@@ -687,8 +741,9 @@ function supplierCard() {
   const internal = SUPPLIER_DATA.filter(s => s.source === 'Internal');
   const ai = SUPPLIER_DATA.filter(s => s.source === 'AI Discovered');
   const locLabel = getLocationsLabel();
+  const totalQty = getTotalQty();
 
-  return `<p>I've identified <strong>7 suppliers</strong> for your ${esc(locLabel)} requirement. Say "add 1, 2, 5" or "add all" to invite them:</p>
+  return `<p>I've identified <strong>7 furniture suppliers</strong> for your <strong>${totalQty} ergonomic office chairs</strong> in ${esc(locLabel)}. Say "add 1, 2, 3" or "add all" to invite them:</p>
   <div class="card">
     <div class="card-header bench-card-header">
       <span>🏢 SUPPLIER DISCOVERY</span>
@@ -1099,7 +1154,7 @@ async function handleStep7(intent) {
     await ariaSay(`Got it — I'll invite <strong>${names.join(', ')}</strong> (${S.selectedNums.length} supplier${S.selectedNums.length > 1 ? 's' : ''}).`);
     await ariaSay(deadlineCard());
   } else {
-    await ariaSay(`Please specify which suppliers to invite. Say "add 1, 2, 5" or "add all".`);
+    await ariaSay(`Please specify which suppliers to invite. Say "add 1, 2, 3" or "add all".`);
   }
 }
 
@@ -1316,6 +1371,7 @@ async function jumpToStep(target) {
   S.chatStarted = true;
   S.userPrompt = 'We need 120 ergonomic office chairs for our new office in Bangalore. Chairs should have adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, and a minimum 3-year warranty.';
   S.eventName = 'Office Chairs Sourcing — Bangalore — Aug 2026';
+  S.eventCategory = EVENT_CATEGORY;
   S.lineItems = LINE_ITEMS;
   S.locations = ['Bangalore'];
   S.uploadedFiles = [{ name: 'Ergonomic_Chair_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' }];
