@@ -4,7 +4,9 @@ A client-side vanilla HTML/CSS/JS prototype for an AI-powered conversational sou
 
 ## Quick Start
 
-Open `aria-sourcing-copilot/index.html` directly in your browser. No build step, no npm, no backend required.
+**Live demo:** https://ayushsisodia007.github.io/AYUSH-Personal/
+
+Or open `aria-sourcing-copilot/index.html` locally in your browser. No build step, no npm, no backend required.
 
 ## Features
 
