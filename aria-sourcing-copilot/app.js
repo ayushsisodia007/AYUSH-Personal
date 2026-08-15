@@ -76,15 +76,17 @@ const LINE_ITEMS = [
   { item: EVENT_ITEM_NAME, desc: EVENT_ITEM_DESC, uom: 'Units', qty: 120, category: EVENT_CATEGORY, location: 'Bangalore' },
 ];
 
-const RFQ_QUESTIONS = [
-  'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).',
-  'What is your proposed delivery schedule to Bangalore for 120 chairs? Please provide a week-wise plan.',
-  'Do you include on-site assembly and installation at our Bangalore office? If yes, please provide pricing.',
-  'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).',
-  'Please confirm GST treatment and provide your GSTIN for invoicing.',
-  'What are your payment terms? Do you accept 30/60/90 day credit?',
-  'Please attach product datasheets, ergonomic certifications, load-test reports, and BIS compliance documents.',
-];
+function getRfqQuestions() {
+  const location = getLocationsLabel();
+  return [
+    'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).',
+    `What is your delivery timeline to ${location}?`,
+    `Do you include on-site assembly and installation at our ${location} office? If yes, please provide pricing.`,
+    'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).',
+    'Please confirm GST treatment and provide your GSTIN for invoicing.',
+    'What are your payment terms? Do you accept 30/60/90 day credit?',
+  ];
+}
 
 const STEP_LABELS = [
   'Welcome', 'Requirement Captured', 'Metadata Confirmed', 'RFQ Preview',
@@ -536,7 +538,7 @@ function metadataCard() {
 function eventDetailsCard() {
   const items = getLineItems();
   const totalQty = getTotalQty();
-  const questions = RFQ_QUESTIONS.map((q, i) => `
+  const questions = getRfqQuestions().map((q, i) => `
     <div class="rfq-question">
       <div class="q-num">Q${i + 1}</div>
       <div class="q-text">${q}</div>
@@ -566,7 +568,7 @@ function rfqPreviewCard() {
   const itemRows = items.map((li, i) => `
     <tr><td>${i + 1}</td><td>${li.item}</td><td>${li.desc}</td><td>${li.uom}</td><td>${li.qty}</td><td>${li.location}</td></tr>`).join('');
 
-  const qRows = RFQ_QUESTIONS.map((q, i) => `
+  const qRows = getRfqQuestions().map((q, i) => `
     <div class="rfq-question"><div class="q-num">Q${i + 1}</div><div class="q-text">${q}</div></div>`).join('');
 
   return `<p>Here's your RFQ document preview for <strong>${totalQty} ergonomic office chairs</strong>:</p>
