@@ -7,22 +7,39 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+  administration: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare standalone deploy bundle
-        run: |
-          cp -r aria-sourcing-copilot /tmp/deploy
-          sed -i 's|href="style.css"|href="https://cdn.jsdelivr.net/gh/ayushsisodia007/AYUSH-Personal@gh-pages/style.css"|' /tmp/deploy/index.html
-          sed -i 's|src="app.js"|src="https://cdn.jsdelivr.net/gh/ayushsisodia007/AYUSH-Personal@gh-pages/app.js"|' /tmp/deploy/index.html
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
-      - name: Deploy to gh-pages branch
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: aria-sourcing-copilot
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Also publish gh-pages branch mirror
+        if: always()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /tmp/deploy
+          publish_dir: aria-sourcing-copilot
           publish_branch: gh-pages
