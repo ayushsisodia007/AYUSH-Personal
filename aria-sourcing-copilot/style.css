@@ -185,13 +185,19 @@ body {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .chat-header h1 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
 }
 
 .chat-status {
@@ -330,7 +336,29 @@ body {
   font-size: 14px;
 }
 
-.meta-item input:focus {
+.meta-item-wide {
+  grid-column: 1 / -1;
+}
+
+.event-name-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.deadline-time {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.rfq-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  word-break: break-word;
+  line-height: 1.3;
+}
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(37,99,235,.15);
@@ -388,12 +416,6 @@ body {
   background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #3B82F6 100%);
   color: #fff;
   padding: 28px 32px;
-}
-
-.rfq-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 4px;
 }
 
 .rfq-header p {

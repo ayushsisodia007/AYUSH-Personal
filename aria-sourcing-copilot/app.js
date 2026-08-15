@@ -10,17 +10,19 @@ const TARGET_PRICE = 70000;
 const BENCHMARK_MIN = 64800;
 const BENCHMARK_MAX = 71200;
 
+const DEADLINE_DEFAULT = { date: '21 Aug 2026', time: '5:00 PM IST' };
+
 const SUPPLIER_DATA = [
-  { id: 1, name: 'Dell Technologies', score: 94, contact: 'Rajesh Kumar', email: 'rajesh.kumar@dell.com', source: 'Internal DB', recommended: true,
+  { id: 1, name: 'Dell Technologies', score: 94, contact: 'Rajesh Kumar', email: 'rajesh.kumar@dell.com', source: 'Internal', recommended: true,
     onTime: 97, pastPOs: 12, avgDiscount: 4.5,
     rationale: 'Strongest performer in your org. Best price-quality ratio with 97% on-time delivery across 12 past POs.' },
-  { id: 2, name: 'HP Enterprise', score: 88, contact: 'Priya Nair', email: 'priya.nair@hpe.com', source: 'Internal DB',
+  { id: 2, name: 'HP Enterprise', score: 88, contact: 'Priya Nair', email: 'priya.nair@hpe.com', source: 'Internal',
     onTime: 93, pastPOs: 8, avgDiscount: 3.1,
     rationale: 'Competitive pricing with excellent warranty terms. Strong support network in Bangalore.' },
-  { id: 3, name: 'Lenovo India', score: 85, contact: 'Amit Sharma', email: 'amit.sharma@lenovo.com', source: 'Internal DB',
+  { id: 3, name: 'Lenovo India', score: 85, contact: 'Amit Sharma', email: 'amit.sharma@lenovo.com', source: 'Internal',
     onTime: 91, pastPOs: 6, avgDiscount: 3.8,
     rationale: 'Good value for bulk orders. ThinkPad series aligns with enterprise security requirements.' },
-  { id: 4, name: 'Acer Business', score: 79, contact: 'Sunita Rao', email: 'sunita.rao@acer.com', source: 'Internal DB',
+  { id: 4, name: 'Acer Business', score: 79, contact: 'Sunita Rao', email: 'sunita.rao@acer.com', source: 'Internal',
     onTime: 88, pastPOs: 4, avgDiscount: 5.2,
     rationale: 'Budget-friendly option. Suitable for non-critical roles but limited enterprise support.' },
   { id: 5, name: 'Ingram Micro', score: 82, contact: 'Vikram Mehta', email: 'vikram.mehta@ingrammicro.com', source: 'AI Discovered',
@@ -67,7 +69,7 @@ const RFQ_QUESTIONS = [
 
 const STEP_LABELS = [
   'Welcome', 'Requirement Captured', 'Metadata Confirmed', 'RFQ Preview',
-  'Attachments', 'Price Benchmarks', 'Supplier Panel', 'Deadline Confirmation',
+  'Attachments', 'RFQ Created', 'Price Benchmarks', 'Supplier Panel', 'Deadline Confirmation',
   'RFQ Published', 'Monitor Responses', 'Award',
 ];
 
@@ -75,14 +77,15 @@ const CHIPS = {
   0: [],
   1: ['Yes, looks good', 'Add more line items', 'Change quantity'],
   2: ['Yes, proceed', 'Edit event name', 'Change a question'],
-  3: ['Upload attachments', 'Show price benchmarks', 'Skip to suppliers'],
-  4: ['Done uploading', 'Skip attachments', 'Show benchmarks'],
-  5: ['Show suppliers', 'Adjust benchmark', 'Yes, proceed'],
-  6: ['Add 1, 2, 5', 'Add all', 'Show more details'],
-  7: ['Yes, 21 Aug works', 'Change to 25 Aug'],
-  8: ['1 — Send reminders', '2 — Extend event', '3 — Monitor responses'],
-  9: ['Why Dell and not HP?', 'Proceed to award'],
-  10: [],
+  3: ['Upload attachments', 'Create without attachments'],
+  4: ['Done uploading'],
+  5: ['Proceed to benchmarks', 'Yes, proceed'],
+  6: ['Show suppliers', 'Yes, proceed'],
+  7: ['Add 1, 2, 5', 'Add all', 'Show more details'],
+  8: ['Yes, 21 Aug works', 'Change to 25 Aug'],
+  9: ['1 — Send reminders', '2 — Extend event', '3 — Monitor responses'],
+  10: ['Why Dell and not HP?', 'Proceed to award'],
+  11: [],
 };
 
 let S = loadState();
@@ -99,6 +102,9 @@ function defaultState() {
     awardDone: false,
     rfqPublished: false,
     uploadDone: false,
+    rfqCreated: false,
+    deadlineDate: DEADLINE_DEFAULT.date,
+    deadlineTime: DEADLINE_DEFAULT.time,
     uploadedFiles: [],
     lineItems: [],
     locations: [],
@@ -131,6 +137,37 @@ window.hardReset = hardReset;
 
 function formatPrice(n) {
   return '₹' + n.toLocaleString('en-IN');
+}
+
+function getTotalQty() {
+  return getLineItems().reduce((s, l) => s + l.qty, 0);
+}
+
+function formatLakhs(amount) {
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
+  return formatPrice(amount);
+}
+
+function calcSavingsVsTarget(unitPrice) {
+  return (S.targetPrice - unitPrice) * getTotalQty();
+}
+
+function formatSavingsAmount(amount) {
+  const abs = Math.abs(amount);
+  if (abs >= 100000) return `₹${(abs / 100000).toFixed(2)}L`;
+  return formatPrice(abs);
+}
+
+function getDeadlineLabel() {
+  return `${S.deadlineDate}, ${S.deadlineTime}`;
+}
+
+async function showRfqCreated() {
+  S.rfqCreated = true;
+  S.step = 5;
+  saveState();
+  updateUI();
+  await ariaSay(rfqCreatedCard());
 }
 
 function confClass(c) {
@@ -265,7 +302,7 @@ function nlp(text) {
   if (/\b(benchmark|price benchmark|show benchmark)\b/.test(t))
     return { type: 'benchmark' };
 
-  if (/\b(skip|no attach|without|no attachment)\b/.test(t))
+  if (/\b(skip|no attach|without|no attachment|without attachments|create without)\b/.test(t))
     return { type: 'skip' };
 
   if (/\b(monitor|response|view response|analyse|analysis|analyz)\b/.test(t))
@@ -296,10 +333,10 @@ function nlp(text) {
     return { type: 'requirement' };
 
   if (/\b(25 aug|august 25|25th)\b/.test(t))
-    return { type: 'deadline', date: '25 Aug 2026' };
+    return { type: 'deadline', date: '25 Aug 2026', time: '5:00 PM IST' };
 
   if (/\b(21 aug|august 21|21st)\b/.test(t))
-    return { type: 'deadline', date: '21 Aug 2026' };
+    return { type: 'deadline', date: '21 Aug 2026', time: '5:00 PM IST' };
 
   const nums = [...t.matchAll(/\b([1-7])\b/g)].map(m => parseInt(m[1], 10));
   if (nums.length > 0 && /\b(add|select|invite|pick|choose|include)\b/.test(t))
@@ -312,7 +349,7 @@ function nlp(text) {
 
   if (/^([1-3])\b/.test(t)) {
     const n = parseInt(t[0], 10);
-    if (S.step === 8) {
+    if (S.step === 9) {
       if (n === 1) return { type: 'remind' };
       if (n === 2) return { type: 'extend' };
       if (n === 3) return { type: 'monitor' };
@@ -400,7 +437,7 @@ function metadataCard() {
   const rows = items.map(li => `
     <tr>
       <td>${li.item}</td>
-      <td><div class="editable" contenteditable="true">${li.desc}</div></td>
+      <td>${li.desc}</td>
       <td>${li.uom}</td>
       <td>${li.qty}</td>
       <td>${li.category}</td>
@@ -421,7 +458,7 @@ function metadataCard() {
       </table>
     </div>
   </div>
-  <p>Does this look correct? You can edit descriptions directly in the table.</p>`;
+  <p>Does this look correct?</p>`;
 }
 
 function eventDetailsCard() {
@@ -436,7 +473,7 @@ function eventDetailsCard() {
     <div class="card-header">📝 Event Details</div>
     <div class="card-body">
       <div class="card-meta">
-        <div class="meta-item"><label>Event Name</label><input type="text" value="${S.eventName}" id="eventNameInput"></div>
+        <div class="meta-item meta-item-wide"><label>Event Name</label><input type="text" value="${esc(S.eventName)}" id="eventNameInput" class="event-name-input"></div>
       </div>
       <h4 style="font-size:13px;font-weight:600;margin:16px 0 8px;">RFQ Questions</h4>
       ${questions}
@@ -484,7 +521,7 @@ function rfqPreviewCard() {
       </div>
     </div>
   </div>
-  <p>Would you like to upload any attachments, or shall I pull price benchmarks?</p>`;
+  <p>Would you like to upload any attachments, or shall we create the RFQ without attachments?</p>`;
 }
 
 function uploadCard() {
@@ -509,13 +546,31 @@ function uploadCard() {
       ${done ? `<div class="upload-file-list" id="uploadFileList">${fileList}</div>` : ''}
     </div>
   </div>
-  <p>${done ? 'Shall I pull price benchmarks next? Say "benchmarks" or "proceed".' : 'Attach your files, then say "done" when ready — or "skip" to continue without attachments.'}</p>`;
+  <p>${done ? 'Click "Done uploading" when finished, or add more files.' : 'Attach your files, then click "Done uploading" when ready.'}</p>`;
 }
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function rfqCreatedCard() {
+  const attachNote = S.uploadedFiles.length
+    ? `${S.uploadedFiles.length} attachment${S.uploadedFiles.length > 1 ? 's' : ''} included in the RFQ.`
+    : 'RFQ created without attachments.';
+  return `<p>Your RFQ has been created successfully!</p>
+  <div class="card">
+    <div class="card-body">
+      <div class="publish-card">
+        <div class="publish-icon">✅</div>
+        <div class="publish-status">RFQ Created Successfully</div>
+        <p style="font-size:14px;font-weight:500;margin:8px 0;">${esc(S.eventName)}</p>
+        <p style="font-size:13px;color:#64748B;">${attachNote}</p>
+      </div>
+    </div>
+  </div>
+  <p>Shall we proceed to price benchmarks?</p>`;
 }
 
 function benchmarkCard() {
@@ -587,8 +642,8 @@ function benchmarkCard() {
 function supplierTableRow(s) {
   const rec = s.recommended ? ' recommended-row' : '';
   const badges = s.recommended ? ' <span class="tag recommended">★ Aria Recommends</span>' : '';
-  const srcTag = s.source === 'Internal DB'
-    ? '<span class="tag internal">Internal DB</span>'
+  const srcTag = s.source === 'Internal'
+    ? '<span class="tag internal">Internal</span>'
     : '<span class="tag ai">AI Discovered</span>';
   return `<tr class="${rec}">
     <td><strong>${s.id}</strong></td>
@@ -596,7 +651,6 @@ function supplierTableRow(s) {
     <td>${srcTag}</td>
     <td>${s.onTime}%</td>
     <td>${s.pastPOs || '—'}</td>
-    <td>${s.avgDiscount}%</td>
     <td><div class="sup-rationale">💡 ${s.rationale}</div></td>
     <td><div class="sup-contact">👤 ${s.contact}<br>✉️ ${s.email}</div></td>
     <td><strong style="color:var(--primary)">${s.score}</strong>/100</td>
@@ -604,10 +658,11 @@ function supplierTableRow(s) {
 }
 
 function supplierCard() {
-  const internal = SUPPLIER_DATA.filter(s => s.source === 'Internal DB');
+  const internal = SUPPLIER_DATA.filter(s => s.source === 'Internal');
   const ai = SUPPLIER_DATA.filter(s => s.source === 'AI Discovered');
+  const locLabel = getLocationsLabel();
 
-  return `<p>I've identified <strong>7 suppliers</strong> for your Bangalore requirement. Say "add 1, 2, 5" or "add all" to invite them:</p>
+  return `<p>I've identified <strong>7 suppliers</strong> for your ${esc(locLabel)} requirement. Say "add 1, 2, 5" or "add all" to invite them:</p>
   <div class="card">
     <div class="card-header bench-card-header">
       <span>🏢 SUPPLIER DISCOVERY</span>
@@ -617,14 +672,14 @@ function supplierCard() {
       <div class="section-divider">📁 Internal Database Vendors (1–4)</div>
       <div class="supplier-table-wrap">
         <table class="supplier-table">
-          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Avg Discount</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
+          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
           <tbody>${internal.map(supplierTableRow).join('')}</tbody>
         </table>
       </div>
       <div class="section-divider">🤖 AI Recommended — New Suppliers (5–7)</div>
       <div class="supplier-table-wrap">
         <table class="supplier-table">
-          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Avg Discount</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
+          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
           <tbody>${ai.map(supplierTableRow).join('')}</tbody>
         </table>
       </div>
@@ -633,8 +688,9 @@ function supplierCard() {
   <p>Which suppliers would you like to invite? Reference by number (e.g. "add 1, 2, 5") or say "add all".</p>`;
 }
 
-function deadlineCard(date) {
-  const d = date || '21 Aug 2026';
+function deadlineCard() {
+  const d = S.deadlineDate || DEADLINE_DEFAULT.date;
+  const t = S.deadlineTime || DEADLINE_DEFAULT.time;
   return `<p>Before I publish, let me confirm the submission deadline:</p>
   <div class="card">
     <div class="card-header">📅 Submission Deadline</div>
@@ -642,7 +698,8 @@ function deadlineCard(date) {
       <div class="deadline-card">
         <div style="font-size:13px;color:#64748B;">Proposed Deadline</div>
         <div class="deadline-date">${d}</div>
-        <div class="deadline-reason">This gives suppliers 6 working days to respond — standard for IT hardware RFQs of this size. Industry average response time is 5–7 days for 80-unit orders.</div>
+        <div class="deadline-time">${t}</div>
+        <div class="deadline-reason">This gives suppliers 6 working days to respond — standard for IT hardware RFQs of this size. Industry average response time is 5–7 days.</div>
       </div>
     </div>
   </div>
@@ -657,7 +714,7 @@ function publishCard() {
       <div class="publish-card">
         <div class="publish-icon">🚀</div>
         <div class="publish-status">RFQ Published Successfully</div>
-        <p style="font-size:13px;color:#64748B;">${S.eventName} · Deadline: 21 Aug 2026 · ${count} suppliers invited</p>
+        <p style="font-size:13px;color:#64748B;">${esc(S.eventName)} · Deadline: ${getDeadlineLabel()} · ${count} suppliers invited</p>
         <ul class="publish-options">
           <li data-num="1">Send Reminders — nudge suppliers who haven't responded</li>
           <li data-num="2">Extend Event — push the deadline</li>
@@ -672,22 +729,30 @@ function publishCard() {
 function vsBenchmark(price) {
   const diff = price - S.targetPrice;
   const pct = ((diff / S.targetPrice) * 100).toFixed(1);
-  if (diff < -500) return `<span class="vs-benchmark below">${formatPrice(Math.abs(diff))} below target (${pct}%)</span>`;
-  if (diff > 500) return `<span class="vs-benchmark above">${formatPrice(diff)} above target (+${pct}%)</span>`;
-  return `<span class="vs-benchmark at">At target</span>`;
+  if (diff < -100) return `<span class="vs-benchmark below">${formatPrice(Math.abs(diff))} below target (${pct}%)</span>`;
+  if (diff > 100) return `<span class="vs-benchmark above">${formatPrice(diff)} above target (+${pct}%)</span>`;
+  return `<span class="vs-benchmark at">At target (${pct}%)</span>`;
 }
 
 function monitorCard() {
-  const bids = [
-    { s: 'Dell Technologies', up: 68200, tv: '₹68.5L', model: 'Latitude 5540', del: '7 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹4,200', score: 94 },
-    { s: 'HP Enterprise', up: 69800, tv: '₹69.8L', model: 'EliteBook 840 G10', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹4,800', score: 88 },
-    { s: 'Lenovo India', up: 70500, tv: '₹70.5L', model: 'ThinkPad T14 Gen 4', del: '12 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹3,900', score: 85 },
-    { s: 'Ingram Micro', up: 71200, tv: '₹71.2L', model: 'Dell Latitude 5540', del: '9 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 60', amc: '₹4,500', score: 82 },
+  const qty = getTotalQty();
+  const bidData = [
+    { s: 'Dell Technologies', up: 69500, model: 'Latitude 5540', del: '7 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹4,200', score: 94 },
+    { s: 'HP Enterprise', up: 70200, model: 'EliteBook 840 G10', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹4,800', score: 88 },
+    { s: 'Lenovo India', up: 70600, model: 'ThinkPad T14 Gen 4', del: '12 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹3,900', score: 85 },
+    { s: 'Ingram Micro', up: 70900, model: 'Dell Latitude 5540', del: '9 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 60', amc: '₹4,500', score: 82 },
   ];
+  const bids = bidData.map(b => ({
+    ...b,
+    tv: formatLakhs(b.up * qty),
+    total: b.up * qty,
+  }));
 
   const lowest = bids.reduce((a, b) => a.up < b.up ? a : b);
-  const savings = ((S.targetPrice - lowest.up) * 100) / 100000;
-  const savingsStr = savings >= 1 ? `₹${savings.toFixed(1)}L` : `₹${Math.round(savings * 100000).toLocaleString('en-IN')}`;
+  const targetTotal = S.targetPrice * qty;
+  const savingsTotal = calcSavingsVsTarget(lowest.up);
+  const savingsStr = formatSavingsAmount(savingsTotal);
+  const savingsPct = ((savingsTotal / targetTotal) * 100).toFixed(1);
 
   const compRows = bids.map(r => `<tr>
     <td>${r.s}</td>
@@ -704,9 +769,9 @@ function monitorCard() {
 
   const insights = `
     <div class="insight-chips">
-      <div class="insight-chip">Target Benchmark: <span class="chip-value">${formatPrice(S.targetPrice)}/unit</span></div>
-      <div class="insight-chip">Lowest Bid: <span class="chip-value">${lowest.s} · ${formatPrice(lowest.up)}</span></div>
-      <div class="insight-chip">Est. Savings: <span class="chip-value">${savingsStr} vs target</span></div>
+      <div class="insight-chip">Target Benchmark: <span class="chip-value">${formatPrice(S.targetPrice)}/unit · ${formatLakhs(targetTotal)} total</span></div>
+      <div class="insight-chip">Lowest Bid: <span class="chip-value">${lowest.s} · ${formatPrice(lowest.up)}/unit</span></div>
+      <div class="insight-chip">Est. Savings: <span class="chip-value">${savingsStr} (${savingsPct}% vs target)</span></div>
       <div class="insight-chip">Responses: <span class="chip-value">4 of 7</span></div>
     </div>`;
 
@@ -740,7 +805,7 @@ function monitorCard() {
         ${scorecard('Lenovo India', lenovoBars)}
       </div>
       <div class="rec-banner">
-        <strong>Recommendation: Award to Dell Technologies</strong> — Dell bids <strong>${formatPrice(lowest.up)}/unit</strong>, which is <strong>${formatPrice(S.targetPrice - lowest.up)} below</strong> your ${formatPrice(S.targetPrice)} target benchmark. Fastest delivery (7 days) and highest composite score (94). Estimated savings of <strong>${savingsStr}</strong> against benchmark.
+        <strong>Recommendation: Award to Dell Technologies</strong> — Dell bids <strong>${formatPrice(lowest.up)}/unit</strong> (${formatLakhs(lowest.total)} total), which is <strong>${formatPrice(S.targetPrice - lowest.up)}/unit below</strong> your ${formatPrice(S.targetPrice)} target. Estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) against the target benchmark of ${formatLakhs(targetTotal)} for ${qty} units.
       </div>
     </div>
   </div>
@@ -772,11 +837,15 @@ function reasoningCard() {
 }
 
 function awardBanner() {
+  const qty = getTotalQty();
+  const awardUnit = 69500;
+  const awardTotal = formatLakhs(awardUnit * qty);
+  const savings = formatSavingsAmount(calcSavingsVsTarget(awardUnit));
   return `<div class="award-banner">
     <h3>🏆 Award Confirmed</h3>
     <div class="award-po">PO-2026-112 · Dell Technologies</div>
-    <div class="award-value">₹68.5L</div>
-    <div class="award-savings">Estimated savings: ₹1.5L vs benchmark</div>
+    <div class="award-value">${awardTotal}</div>
+    <div class="award-savings">Estimated savings: ${savings} vs target benchmark</div>
   </div>`;
 }
 
@@ -793,10 +862,11 @@ async function handleInput(text) {
     case 4: return handleStep4(intent);
     case 5: return handleStep5(intent);
     case 6: return handleStep6(intent);
-    case 7: return handleStep7(intent, text);
-    case 8: return handleStep8(intent);
+    case 7: return handleStep7(intent);
+    case 8: return handleStep8(intent, text);
     case 9: return handleStep9(intent);
     case 10: return handleStep10(intent);
+    case 11: return handleStep11(intent);
   }
 }
 
@@ -825,22 +895,15 @@ async function handleStep2(intent) {
 }
 
 async function handleStep3(intent) {
-  if (intent.type === 'upload') {
+  if (intent.type === 'upload' || intent.type === 'confirm') {
     S.step = 4;
     saveState();
     updateUI();
     await ariaSay(uploadCard());
-  } else if (intent.type === 'benchmark' || intent.type === 'skip' || intent.type === 'suppliers') {
-    if (intent.type === 'skip') { S.uploadDone = false; }
-    S.step = 5;
-    saveState();
-    updateUI();
-    await ariaSay(benchmarkCard());
-  } else if (intent.type === 'confirm') {
-    S.step = 4;
-    saveState();
-    updateUI();
-    await ariaSay(uploadCard());
+  } else if (intent.type === 'skip' || intent.type === 'benchmark') {
+    S.uploadDone = false;
+    S.uploadedFiles = [];
+    await showRfqCreated();
   }
 }
 
@@ -852,31 +915,31 @@ async function handleStep4(intent) {
   if ((intent.type === 'confirm' || intent.type === 'unknown') && S.uploadedFiles.length > 0) {
     S.uploadDone = true;
     saveState();
-    S.step = 5;
-    saveState();
-    updateUI();
-    await ariaSay(`Great — ${S.uploadedFiles.length} file${S.uploadedFiles.length > 1 ? 's' : ''} attached. Pulling price benchmarks now…`);
-    await ariaSay(benchmarkCard());
-  } else if (intent.type === 'benchmark' || intent.type === 'skip') {
-    S.step = 5;
-    saveState();
-    updateUI();
-    await ariaSay(benchmarkCard());
-  } else if (intent.type === 'confirm' && S.uploadedFiles.length === 0) {
-    await ariaSay(`No files attached yet. Click the upload area to browse, or say "skip" to continue without attachments.`);
+    await showRfqCreated();
+  } else if (intent.type === 'confirm' || intent.type === 'unknown') {
+    await ariaSay(`No files attached yet. Click the upload area to browse, then click "Done uploading".`);
   }
 }
 
 async function handleStep5(intent) {
-  if (intent.type === 'confirm' || intent.type === 'suppliers' || intent.type === 'unknown') {
+  if (intent.type === 'confirm' || intent.type === 'benchmark' || intent.type === 'unknown') {
     S.step = 6;
+    saveState();
+    updateUI();
+    await ariaSay(benchmarkCard());
+  }
+}
+
+async function handleStep6(intent) {
+  if (intent.type === 'confirm' || intent.type === 'suppliers' || intent.type === 'unknown') {
+    S.step = 7;
     saveState();
     updateUI();
     await ariaSay(supplierCard());
   }
 }
 
-async function handleStep6(intent) {
+async function handleStep7(intent) {
   if (intent.type === 'addAll') {
     S.selectedNums = SUPPLIER_DATA.map(s => s.id);
   } else if (intent.type === 'numbered') {
@@ -890,7 +953,7 @@ async function handleStep6(intent) {
   if (S.selectedNums.length > 0 || intent.type === 'confirm' || intent.type === 'publish') {
     if (!S.selectedNums.length) S.selectedNums = [1, 2, 3];
     const names = S.selectedNums.map(n => SUPPLIER_DATA.find(s => s.id === n)?.name).filter(Boolean);
-    S.step = 7;
+    S.step = 8;
     saveState();
     updateUI();
     await ariaSay(`Got it — I'll invite <strong>${names.join(', ')}</strong> (${S.selectedNums.length} supplier${S.selectedNums.length > 1 ? 's' : ''}).`);
@@ -900,11 +963,16 @@ async function handleStep6(intent) {
   }
 }
 
-async function handleStep7(intent, text) {
-  let date = '21 Aug 2026';
-  if (intent.type === 'deadline') date = intent.date;
-  if (intent.type === 'confirm' || intent.type === 'deadline' || intent.type === 'unknown' || intent.type === 'publish') {
-    S.step = 8;
+async function handleStep8(intent) {
+  if (intent.type === 'deadline') {
+    S.deadlineDate = intent.date;
+    S.deadlineTime = intent.time || DEADLINE_DEFAULT.time;
+    saveState();
+    await ariaSay(deadlineCard());
+    return;
+  }
+  if (intent.type === 'confirm' || intent.type === 'unknown' || intent.type === 'publish') {
+    S.step = 9;
     S.rfqPublished = true;
     saveState();
     updateUI();
@@ -912,29 +980,32 @@ async function handleStep7(intent, text) {
   }
 }
 
-async function handleStep8(intent) {
+async function handleStep9(intent) {
   if (intent.type === 'monitor') {
-    S.step = 9;
+    S.step = 10;
     saveState();
     updateUI();
     await ariaSay(monitorCard());
   } else if (intent.type === 'remind') {
     await ariaSay(`Reminder emails sent to 3 suppliers who haven't responded yet. I'll notify you when they submit their bids.`);
   } else if (intent.type === 'extend') {
-    await ariaSay(`Deadline extended to <strong>28 Aug 2026</strong>. All invited suppliers have been notified of the extension.`);
+    S.deadlineDate = '28 Aug 2026';
+    S.deadlineTime = '5:00 PM IST';
+    saveState();
+    await ariaSay(`Deadline extended to <strong>${getDeadlineLabel()}</strong>. All invited suppliers have been notified of the extension.`);
   } else {
-    S.step = 9;
+    S.step = 10;
     saveState();
     updateUI();
     await ariaSay(monitorCard());
   }
 }
 
-async function handleStep9(intent) {
+async function handleStep10(intent) {
   if (intent.type === 'why') {
     await ariaSay(reasoningCard());
   } else if (intent.type === 'award' || intent.type === 'confirm' || intent.type === 'named') {
-    S.step = 10;
+    S.step = 11;
     S.awardDone = true;
     saveState();
     updateUI();
@@ -943,7 +1014,7 @@ async function handleStep9(intent) {
   }
 }
 
-async function handleStep10(intent) {
+async function handleStep11(intent) {
   await ariaSay(`The award has been completed. PO-2026-112 is being processed. Is there anything else I can help with?`);
 }
 
@@ -1089,29 +1160,35 @@ async function jumpToStep(target) {
     S.messages.push({ role: 'aria', html: uploadCard(), t: now() });
   }
   if (target >= 5) {
-    S.messages.push({ role: 'user', html: 'Show price benchmarks', t: now() });
-    S.messages.push({ role: 'aria', html: benchmarkCard(), t: now() });
+    S.rfqCreated = true;
+    S.uploadDone = true;
+    S.messages.push({ role: 'user', html: 'Done uploading', t: now() });
+    S.messages.push({ role: 'aria', html: rfqCreatedCard(), t: now() });
   }
   if (target >= 6) {
+    S.messages.push({ role: 'user', html: 'Proceed to benchmarks', t: now() });
+    S.messages.push({ role: 'aria', html: benchmarkCard(), t: now() });
+  }
+  if (target >= 7) {
     S.messages.push({ role: 'user', html: 'Show suppliers', t: now() });
     S.messages.push({ role: 'aria', html: supplierCard(), t: now() });
   }
-  if (target >= 7) {
+  if (target >= 8) {
     S.selectedNums = [1, 2, 5];
     S.messages.push({ role: 'user', html: 'Add 1, 2, 5', t: now() });
     S.messages.push({ role: 'aria', html: `Got it — I'll invite <strong>Dell Technologies, HP Enterprise, Ingram Micro</strong> (3 suppliers).`, t: now() });
     S.messages.push({ role: 'aria', html: deadlineCard(), t: now() });
   }
-  if (target >= 8) {
+  if (target >= 9) {
     S.rfqPublished = true;
     S.messages.push({ role: 'user', html: 'Yes, 21 Aug works', t: now() });
     S.messages.push({ role: 'aria', html: publishCard(), t: now() });
   }
-  if (target >= 9) {
+  if (target >= 10) {
     S.messages.push({ role: 'user', html: '3 — Monitor responses', t: now() });
     S.messages.push({ role: 'aria', html: monitorCard(), t: now() });
   }
-  if (target >= 10) {
+  if (target >= 11) {
     S.awardDone = true;
     S.messages.push({ role: 'user', html: 'Proceed to award', t: now() });
     S.messages.push({ role: 'aria', html: awardBanner(), t: now() });
