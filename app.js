@@ -4,8 +4,8 @@
    Aria — AI Sourcing Copilot  ·  app.js
    ═══════════════════════════════════════════ */
 
-const STATE_KEY = 'aria_v7_state';
-const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state'];
+const STATE_KEY = 'aria_v8_state';
+const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state', 'aria_v7_state'];
 
 const EVENT_CATEGORY = 'Office Furniture';
 const EVENT_ITEM_NAME = 'Ergonomic Office Chair';
