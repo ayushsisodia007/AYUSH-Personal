@@ -14,9 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare standalone deploy bundle
+        run: |
+          cp -r aria-sourcing-copilot /tmp/deploy
+          sed -i 's|href="style.css"|href="https://cdn.jsdelivr.net/gh/ayushsisodia007/AYUSH-Personal@gh-pages/style.css"|' /tmp/deploy/index.html
+          sed -i 's|src="app.js"|src="https://cdn.jsdelivr.net/gh/ayushsisodia007/AYUSH-Personal@gh-pages/app.js"|' /tmp/deploy/index.html
+
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: aria-sourcing-copilot
+          publish_dir: /tmp/deploy
           publish_branch: gh-pages
