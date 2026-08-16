@@ -1,22 +1,22 @@
 'use strict';
 
 const EVENT = {
-  id: 'RFQ-2026-0815-CHR',
-  name: 'Office Chairs Sourcing — Bangalore — Aug 2026',
-  category: 'Office Furniture',
-  location: 'Bangalore',
+  id: 'RFQ-2026-0815-DSK',
+  name: 'Office Desks Sourcing — Whitefield — Aug 2026',
+  category: 'Office Furniture → Desks',
+  location: 'Whitefield, Bangalore',
   deadline: '21 Aug 2026 · 5:00 PM IST',
   currency: 'INR (₹)',
   qty: 50,
-  item: 'Ergonomic Office Chair',
-  specs: 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, minimum 3-year warranty',
+  item: 'Office Desk',
+  specs: 'Good-quality height-adjustable office desk with monitor arms. Delivery and installation included. Reasonable pricing with GST included.',
   questions: [
-    { key: 'model', label: 'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).' },
-    { key: 'delivery', label: 'What is your delivery timeline to Bangalore?' },
-    { key: 'assembly', label: 'Do you include on-site assembly and installation at our Bangalore office? If yes, please provide pricing.' },
-    { key: 'warranty', label: 'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).' },
-    { key: 'gstin', label: 'Please confirm GST treatment and provide your GSTIN for invoicing.' },
-    { key: 'payment', label: 'What are your payment terms? Do you accept 30/60/90 day credit?' },
+    { key: 'model', label: 'Please confirm the exact desk model and specifications, including dimensions and height-adjustment range.' },
+    { key: 'monitorArm', label: 'Please confirm the monitor arm specifications, compatibility and maximum supported load.' },
+    { key: 'delivery', label: 'Please confirm the delivery timeline to the Whitefield, Bangalore campus.' },
+    { key: 'assembly', label: 'Please confirm whether delivery, assembly and installation are included in the quoted price.' },
+    { key: 'warranty', label: 'Please confirm the warranty period and coverage, including onsite vs carry-in support.' },
+    { key: 'gstPayment', label: 'Please provide GST treatment/GSTIN and payment terms.' },
   ],
 };
 
@@ -27,17 +27,82 @@ const SUPPLIERS = {
   4: { name: 'Nilkamal Furniture', contact: 'Vikram Shah' },
   5: { name: 'Spacewood Solutions', contact: 'Deepa Krishnan' },
   6: { name: 'Wipro Furniture', contact: 'Arjun Reddy' },
-  7: { name: 'Urban Ladder Business', contact: 'Sneha Rao' },
 };
 
+const ACCEPTED_UPLOAD_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
+const ACCEPTED_UPLOAD_EXT = /\.(pdf|doc|docx|xls|xlsx|jpg|jpeg|png|webp)$/i;
+
 const DEMO_EXTRACT = {
-  1: { model: 'Optima Max Mesh — adjustable lumbar, 3D armrests, breathable mesh back, adjustable seat height', unitPrice: 13800, delivery: '10 working days to Bangalore', assembly: 'Included — on-site assembly at Bangalore office', warranty: '3 years onsite', gstin: '29AABCF1234F1Z5', payment: 'Net 45', amc: '₹850/yr' },
-  2: { model: 'Interio ErgoPro — adjustable lumbar, 3D armrests, breathable mesh back', unitPrice: 14200, delivery: '12 working days to Bangalore', assembly: 'Included — on-site assembly', warranty: '3 years onsite', gstin: '27AABCG5678H1Z2', payment: 'Net 30', amc: '₹920/yr' },
-  3: { model: 'Durian FlexiMesh X — adjustable lumbar, 2D armrests, breathable mesh back', unitPrice: 14500, delivery: '14 working days to Bangalore', assembly: 'On request — quoted separately', warranty: '3 years carry-in', gstin: '29AABCD9012K1Z8', payment: 'Net 45', amc: '₹780/yr' },
-  4: { model: 'Nilkamal Thames — mesh back, adjustable armrests', unitPrice: 14800, delivery: '11 working days to Bangalore', assembly: 'Extra charge — ₹150/chair', warranty: '3 years carry-in', gstin: '29AABCN3456L1Z1', payment: 'Net 60', amc: '₹700/yr' },
-  5: { model: 'Spacewood Ergo Mesh Pro — lumbar support, 3D armrests', unitPrice: 14600, delivery: '13 working days to Bangalore', assembly: 'Included', warranty: '3 years onsite', gstin: '29AABCS7890M1Z3', payment: 'Net 45', amc: '₹800/yr' },
-  6: { model: 'Wipro ErgoSeat 360 — mesh back, adjustable lumbar', unitPrice: 14700, delivery: '15 working days to Bangalore', assembly: 'Included for orders above 100 units', warranty: '3 years onsite', gstin: '29AABCW2345N1Z4', payment: 'Net 45', amc: '₹820/yr' },
-  7: { model: 'Urban Ladder Business Ergo — mesh back, 2D armrests', unitPrice: 14900, delivery: '16 working days to Bangalore', assembly: 'Optional — ₹200/chair', warranty: '3 years carry-in', gstin: '29AABCU6789P1Z5', payment: 'Net 30', amc: '₹750/yr' },
+  1: {
+    model: 'Optima Sit-Stand Pro — height range 65–125 cm, electric adjust, 140×70 cm desktop',
+    monitorArm: 'Dual-arm compatible, 9 kg max load per arm, VESA 75/100',
+    unitPrice: 17800,
+    delivery: '12 working days to Whitefield, Bangalore campus',
+    assembly: 'Included — delivery, assembly and installation in quoted price',
+    warranty: '3 years onsite',
+    gstPayment: 'GST included · GSTIN 29AABCF1234F1Z5 · Net 45',
+    amc: '₹1,200/yr',
+  },
+  2: {
+    model: 'Interio WorkPro Desk — height range 68–120 cm, electric sit-stand',
+    monitorArm: 'Single/dual arm, 8 kg max load, clamp and grommet mount',
+    unitPrice: 18200,
+    delivery: '8 working days to Whitefield, Bangalore campus',
+    assembly: 'Included — delivery, assembly and installation in quoted price',
+    warranty: '3 years onsite',
+    gstPayment: 'GST included · GSTIN 27AABCG5678H1Z2 · Net 30',
+    amc: '₹1,350/yr',
+  },
+  3: {
+    model: 'Durian FlexiDesk X — height range 70–118 cm, manual crank adjust',
+    monitorArm: 'Single arm, 7 kg max load',
+    unitPrice: 18500,
+    delivery: '16 working days to Whitefield, Bangalore campus',
+    assembly: 'On request — assembly quoted separately',
+    warranty: '3 years carry-in',
+    gstPayment: 'GST extra at 18% · GSTIN 29AABCD9012K1Z8 · Net 45',
+    amc: '₹980/yr',
+  },
+  4: {
+    model: 'Nilkamal Elevate — height range 72–115 cm, electric adjust',
+    monitorArm: 'Single arm, 6 kg max load',
+    unitPrice: 18800,
+    delivery: '13 working days to Whitefield, Bangalore campus',
+    assembly: 'Extra charge — ₹350/desk for installation',
+    warranty: '2 years carry-in',
+    gstPayment: 'GST included · GSTIN 29AABCN3456L1Z1 · Net 60',
+    amc: '₹850/yr',
+  },
+  5: {
+    model: 'Spacewood SitPro Electric — height range 66–122 cm',
+    monitorArm: 'Dual-arm option, 8 kg max load',
+    unitPrice: 18100,
+    delivery: '14 working days to Whitefield, Bangalore campus',
+    assembly: 'Included — delivery and installation',
+    warranty: '3 years onsite',
+    gstPayment: 'GST included · GSTIN 29AABCS7890M1Z3 · Net 45',
+    amc: '₹1,100/yr',
+  },
+  6: {
+    model: 'Wipro WorkStation Pro — height range 70–120 cm, electric adjust',
+    monitorArm: 'Single/dual arm, 7 kg max load',
+    unitPrice: 17950,
+    delivery: '15 working days to Whitefield, Bangalore campus',
+    assembly: 'Included for bulk campus orders',
+    warranty: '3 years onsite',
+    gstPayment: 'GST included · GSTIN 29AABCW2345N1Z4 · Net 45',
+    amc: '₹1,050/yr',
+  },
 };
 
 const params = new URLSearchParams(location.search);
@@ -60,6 +125,11 @@ function getDemoExtract() {
   return { ...(DEMO_EXTRACT[supplierId] || DEMO_EXTRACT[1]) };
 }
 
+function isAcceptedFile(file) {
+  if (!file) return false;
+  return ACCEPTED_UPLOAD_TYPES.includes(file.type) || ACCEPTED_UPLOAD_EXT.test(file.name);
+}
+
 function renderEvent() {
   const sup = getSupplier();
   document.getElementById('supplierMeta').innerHTML = `
@@ -73,7 +143,7 @@ function renderEvent() {
     <div class="meta-item"><label>Event</label><span>${EVENT.name}</span></div>
     <div class="meta-item"><label>Event ID</label><span>${eventId}</span></div>
     <div class="meta-item"><label>Category</label><span>${EVENT.category}</span></div>
-    <div class="meta-item"><label>Delivery</label><span>${EVENT.location}</span></div>
+    <div class="meta-item"><label>Delivery Location</label><span>${EVENT.location}</span></div>
     <div class="meta-item"><label>Deadline</label><span class="highlight">${EVENT.deadline}</span></div>
     <div class="meta-item"><label>Currency</label><span>${EVENT.currency}</span></div>`;
 
@@ -105,18 +175,18 @@ function switchMethod(method) {
     tab.setAttribute('aria-selected', active);
   });
   document.getElementById('panelForm').classList.toggle('active', method === 'form');
-  document.getElementById('panelPdf').classList.toggle('active', method === 'pdf');
+  document.getElementById('panelUpload').classList.toggle('active', method === 'upload');
 }
 
 function bidFields(data) {
   return [
-    { label: 'Model & specifications', value: data.model, span: true },
+    { label: 'Desk model & specifications', value: data.model, span: true },
+    { label: 'Monitor arm', value: data.monitorArm, span: true },
     { label: 'Unit price', value: formatPrice(data.unitPrice) },
     { label: 'Delivery timeline', value: data.delivery },
-    { label: 'Assembly & installation', value: data.assembly, span: true },
+    { label: 'Delivery, assembly & installation', value: data.assembly, span: true },
     { label: 'Warranty', value: data.warranty },
-    { label: 'GSTIN', value: data.gstin },
-    { label: 'Payment terms', value: data.payment },
+    { label: 'GST & payment terms', value: data.gstPayment, span: true },
     { label: 'AMC / year', value: data.amc || '—' },
   ];
 }
@@ -129,12 +199,17 @@ function renderExtractPreview(data) {
     </div>`).join('');
 }
 
+function sourceLabel(source) {
+  if (source === 'upload') return uploadedFileName || 'Uploaded document';
+  return 'Online form';
+}
+
 function showSuccess(data, source) {
   const total = data.unitPrice * EVENT.qty;
   const ref = `BID-${eventId}-${supplierId}-${Date.now().toString(36).toUpperCase()}`;
 
   document.getElementById('successMessage').textContent =
-    `Aria has understood your ${source === 'pdf' ? 'PDF quotation' : 'form submission'} and mapped all responses to the RFQ requirements.`;
+    `Aria has understood your ${source === 'upload' ? 'uploaded document' : 'form submission'} and mapped all responses to the RFQ requirements.`;
 
   const questionRows = source === 'form'
     ? EVENT.questions.map((q, i) => `<dt>Q${i + 1}</dt><dd>${data[q.key]}</dd>`).join('')
@@ -143,10 +218,10 @@ function showSuccess(data, source) {
   document.getElementById('successSummary').innerHTML = `
     <dl>
       <dt>Unit price</dt><dd>${formatPrice(data.unitPrice)}</dd>
-      <dt>Quantity</dt><dd>${EVENT.qty} chairs</dd>
+      <dt>Quantity</dt><dd>${EVENT.qty} units</dd>
       <dt>Total bid value</dt><dd>${formatPrice(total)}</dd>
       ${source === 'form' ? questionRows : bidFields(data).map(f => `<dt>${f.label}</dt><dd>${f.value}</dd>`).join('')}
-      <dt>Source</dt><dd>${source === 'pdf' ? uploadedFileName : 'Online form'}</dd>
+      <dt>Source</dt><dd>${sourceLabel(source)}</dd>
     </dl>`;
 
   document.getElementById('successRef').textContent =
@@ -159,19 +234,20 @@ function showSuccess(data, source) {
 function formToBid(form) {
   const bid = { unitPrice: parseInt(form.unitPrice.value, 10) };
   EVENT.questions.forEach(q => { bid[q.key] = form[q.key].value.trim(); });
-  bid.model = bid.model;
   return bid;
 }
 
-function handlePdf(file) {
-  if (!file || file.type !== 'application/pdf') {
-    alert('Please upload a PDF file.');
+function handleUpload(file) {
+  if (!isAcceptedFile(file)) {
+    alert('Please upload a supported file — PDF, Word, Excel, or image (JPG, PNG).');
     return;
   }
   uploadedFileName = file.name;
-  document.getElementById('pdfZone').classList.add('hidden');
+  document.getElementById('uploadZone').classList.add('hidden');
   document.getElementById('extractPreview').classList.add('hidden');
   document.getElementById('aiStatus').classList.remove('hidden');
+  document.querySelector('#aiStatus p').textContent =
+    'Aria is reading your document and extracting bid details…';
 
   setTimeout(() => {
     extractedBid = getDemoExtract();
@@ -181,11 +257,11 @@ function handlePdf(file) {
   }, 1800);
 }
 
-function resetPdf() {
+function resetUpload() {
   extractedBid = null;
   uploadedFileName = '';
-  document.getElementById('pdfInput').value = '';
-  document.getElementById('pdfZone').classList.remove('hidden');
+  document.getElementById('uploadInput').value = '';
+  document.getElementById('uploadZone').classList.remove('hidden');
   document.getElementById('aiStatus').classList.add('hidden');
   document.getElementById('extractPreview').classList.add('hidden');
 }
@@ -202,24 +278,24 @@ document.addEventListener('DOMContentLoaded', () => {
     showSuccess(formToBid(e.target), 'form');
   });
 
-  const pdfInput = document.getElementById('pdfInput');
-  const pdfZone = document.getElementById('pdfZone');
+  const uploadInput = document.getElementById('uploadInput');
+  const uploadZone = document.getElementById('uploadZone');
 
-  pdfInput.addEventListener('change', e => {
-    if (e.target.files[0]) handlePdf(e.target.files[0]);
+  uploadInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleUpload(e.target.files[0]);
   });
 
-  pdfZone.addEventListener('dragover', e => { e.preventDefault(); pdfZone.classList.add('dragover'); });
-  pdfZone.addEventListener('dragleave', () => pdfZone.classList.remove('dragover'));
-  pdfZone.addEventListener('drop', e => {
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
     e.preventDefault();
-    pdfZone.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) handlePdf(e.dataTransfer.files[0]);
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleUpload(e.dataTransfer.files[0]);
   });
 
-  document.getElementById('pdfReupload').addEventListener('click', resetPdf);
+  document.getElementById('uploadReupload').addEventListener('click', resetUpload);
 
-  document.getElementById('pdfConfirm').addEventListener('click', () => {
-    if (extractedBid) showSuccess(extractedBid, 'pdf');
+  document.getElementById('uploadConfirm').addEventListener('click', () => {
+    if (extractedBid) showSuccess(extractedBid, 'upload');
   });
 });

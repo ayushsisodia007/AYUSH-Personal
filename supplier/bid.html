@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="supplier.css?v=20260816">
+  <link rel="stylesheet" href="supplier.css?v=20260816d">
 </head>
 <body>
   <div class="supplier-app">
@@ -56,46 +56,47 @@
 
           <div class="method-tabs" role="tablist">
             <button class="method-tab active" data-method="form" role="tab" aria-selected="true">Fill form</button>
-            <button class="method-tab" data-method="pdf" role="tab" aria-selected="false">Upload PDF</button>
+            <button class="method-tab" data-method="upload" role="tab" aria-selected="false">Fill via Upload</button>
           </div>
 
           <!-- Form path -->
           <div class="method-panel active" id="panelForm">
             <form id="bidForm" class="bid-form">
-              <h3 class="section-label">RFQ Questions</h3>
+              <h3 class="section-label">6 mandatory questions</h3>
               <p class="form-hint">Please answer each question below. All fields are required.</p>
               <div class="rfq-answers" id="rfqAnswers"></div>
               <button type="submit" class="btn-primary">Submit bid →</button>
             </form>
           </div>
 
-          <!-- PDF path -->
-          <div class="method-panel" id="panelPdf">
-            <div class="upload-zone" id="pdfZone">
-              <div class="upload-icon">📄</div>
-              <p class="upload-title">Upload your quotation PDF</p>
-              <p class="upload-hint">Aria will extract model, pricing, delivery, warranty, GST, and payment terms.</p>
+          <!-- Upload path -->
+          <div class="method-panel" id="panelUpload">
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-icon">📁</div>
+              <p class="upload-title">Upload your quotation or bid document</p>
+              <p class="upload-hint">Aria will extract desk model, monitor arm specs, pricing, delivery, warranty, GST and payment terms from your file.</p>
+              <p class="upload-formats">Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), JPG, PNG</p>
               <label class="btn-secondary">
-                Choose PDF
-                <input type="file" id="pdfInput" accept=".pdf,application/pdf" hidden>
+                Choose file
+                <input type="file" id="uploadInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/webp" hidden>
               </label>
             </div>
 
             <div class="ai-status hidden" id="aiStatus">
               <div class="ai-spinner"></div>
-              <p>Aria is reading your PDF and extracting bid details…</p>
+              <p>Aria is reading your document and extracting bid details…</p>
             </div>
 
             <div class="extract-preview hidden" id="extractPreview">
               <div class="preview-header">
-                <h3>Extracted from your PDF</h3>
+                <h3>Extracted from your document</h3>
                 <span class="ai-badge">AI Parsed</span>
               </div>
               <p class="preview-note">Review the details below before submitting your final bid.</p>
               <div class="preview-grid" id="extractGrid"></div>
               <div class="preview-actions">
-                <button type="button" class="btn-ghost" id="pdfReupload">Upload different file</button>
-                <button type="button" class="btn-primary" id="pdfConfirm">Confirm &amp; submit bid →</button>
+                <button type="button" class="btn-ghost" id="uploadReupload">Upload different file</button>
+                <button type="button" class="btn-primary" id="uploadConfirm">Confirm &amp; submit bid →</button>
               </div>
             </div>
           </div>
@@ -115,6 +116,6 @@
     </main>
   </div>
 
-  <script src="supplier.js?v=20260816"></script>
+  <script src="supplier.js?v=20260816d"></script>
 </body>
 </html>
