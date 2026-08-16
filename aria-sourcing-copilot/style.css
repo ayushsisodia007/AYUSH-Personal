@@ -1604,3 +1604,16 @@ body {
 .submission-source-pdf { background: #FEE2E2; color: #B91C1C; }
 .submission-source-email { background: #FEF3C7; color: #B45309; }
 .submission-source-scanned { background: #EDE9FE; color: #6D28D9; }
+
+/* ── Requirement Summary ── */
+.summary-block { display: flex; flex-direction: column; gap: 12px; }
+.summary-row { display: flex; flex-direction: column; gap: 4px; }
+.summary-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.summary-value { font-size: 14px; font-weight: 500; line-height: 1.5; }
+.summary-list { margin: 0; padding-left: 18px; font-size: 14px; }
+.summary-desc .summary-value { color: var(--text-muted); font-weight: 400; }
+
+/* ── Supplier Panel ── */
+.panel-section { margin-bottom: 16px; }
+.panel-section h4 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.panel-supplier-list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8; }
