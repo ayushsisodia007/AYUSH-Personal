@@ -1590,3 +1590,17 @@ body {
   border-radius: 4px;
   margin-left: 4px;
 }
+
+.submission-source {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.submission-source-platform { background: #DBEAFE; color: #1D4ED8; }
+.submission-source-pdf { background: #FEE2E2; color: #B91C1C; }
+.submission-source-email { background: #FEF3C7; color: #B45309; }
+.submission-source-scanned { background: #EDE9FE; color: #6D28D9; }
