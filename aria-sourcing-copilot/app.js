@@ -614,6 +614,7 @@ function rfqPreviewCard() {
     <div class="rfq-question"><div class="q-num">${i + 1}</div><div class="q-text">${q}</div></div>`).join('');
 
   return `<p>Here's your RFQ document preview for <strong>${totalQty} height-adjustable office desks with monitor arms</strong>:</p>
+  <p>Invited suppliers will be asked to submit <strong>unit pricing for each line item</strong> in the pricing table below, and provide written responses to the <strong>mandatory questions</strong> listed in this RFQ. This ensures every bid is comparable on price, specifications, delivery, and commercial terms.</p>
   <div class="rfq-doc">
     <div class="rfq-header">
       <h2>${S.eventName}</h2>
@@ -645,7 +646,8 @@ function rfqPreviewCard() {
       </div>
     </div>
   </div>
-  <p>Would you like to upload any attachments, or shall we create the RFQ without attachments?</p>`;
+  <p>Would you like to upload any attachments for suppliers to review, or shall we create the RFQ without attachments?</p>
+  <p class="rfq-attach-hint">Adding spec sheets, site layouts, or evaluation criteria helps suppliers quote accurately and reduces back-and-forth on technical details.</p>`;
 }
 
 function uploadCard() {
@@ -657,7 +659,8 @@ function uploadCard() {
       <button class="file-remove" data-remove="${i}">Remove</button>
     </div>`).join('');
 
-  return `<p>${done ? `${files.length} file${files.length > 1 ? 's' : ''} attached successfully.` : 'Upload supporting documents for this RFQ — spec sheets, SOWs, or evaluation criteria.'}</p>
+  return `<p>${done ? `${files.length} file${files.length > 1 ? 's' : ''} attached successfully.` : 'Upload supporting documents for this RFQ — spec sheets, site layouts, or evaluation criteria.'}</p>
+  ${done ? '' : '<p class="rfq-attach-hint">These files will be shared with invited suppliers so they can review technical requirements, site constraints, and evaluation expectations before submitting their bids.</p>'}
   <div class="card">
     <div class="card-header">📎 Attachments</div>
     <div class="card-body">
