@@ -42,15 +42,27 @@ const SUPPLIER_DATA = [
 ];
 
 const BID_RESPONSES = {
-  1: { up: 13800, model: 'Optima Max Mesh', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹850/yr', score: 92,
+  1: { up: 13800, model: 'Optima Max Mesh', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹850/yr', score: 92, source: 'platform',
     lumbar: 'Adjustable lumbar', armrests: '3D adjustable', mesh: 'Breathable mesh', assembly: 'Included', hist: '96/100' },
-  2: { up: 14200, model: 'Interio ErgoPro', del: '12 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹920/yr', score: 89,
+  2: { up: 14200, model: 'Interio ErgoPro', del: '12 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹920/yr', score: 89, source: 'pdf',
     lumbar: 'Adjustable lumbar', armrests: '3D adjustable', mesh: 'Breathable mesh', assembly: 'Included', hist: '90/100' },
-  3: { up: 14500, model: 'Durian FlexiMesh X', del: '14 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹780/yr', score: 86,
+  3: { up: 14500, model: 'Durian FlexiMesh X', del: '14 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹780/yr', score: 86, source: 'email',
     lumbar: 'Adjustable lumbar', armrests: '2D adjustable', mesh: 'Breathable mesh', assembly: 'On request', hist: '85/100' },
-  4: { up: 14800, model: 'Nilkamal Thames', del: '11 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 60', amc: '₹700/yr', score: 82,
+  4: { up: 14800, model: 'Nilkamal Thames', del: '11 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 60', amc: '₹700/yr', score: 82, source: 'scanned',
     lumbar: 'Fixed lumbar', armrests: 'Adjustable', mesh: 'Mesh back', assembly: 'Extra charge', hist: '82/100' },
 };
+
+const SUBMISSION_SOURCE_LABELS = {
+  platform: 'Platform',
+  pdf: 'PDF',
+  email: 'Email',
+  scanned: 'Scanned proforma',
+};
+
+function submissionSourceBadge(source) {
+  const label = SUBMISSION_SOURCE_LABELS[source] || source;
+  return `<span class="submission-source submission-source-${source}">${label}</span>`;
+}
 
 const SUPPLIER_ALIASES = {
   featherlite: 1, godrej: 2, interio: 2, durian: 3, nilkamal: 4,
@@ -862,6 +874,7 @@ function monitorCard() {
 
   const compRows = bids.map(r => `<tr class="${r.rec ? 'recommended-row' : ''}">
     <td><strong>${r.name}</strong>${r.rec ? ' <span class="rec-badge">★ Recommended</span>' : ''}</td>
+    <td>${submissionSourceBadge(r.source)}</td>
     <td>${formatPrice(r.up)}<br>${vsBenchmark(r.up)}</td>
     <td>${r.tv}</td>
     <td>${r.model}</td>
@@ -909,7 +922,7 @@ function monitorCard() {
     <div class="card-header">📊 Bid Comparison <span class="benchmark-ref">Target: ${formatPrice(S.targetPrice)}/unit</span></div>
     <div class="card-body" style="overflow-x:auto;">
       <table class="data-table comparison-table">
-        <thead><tr><th>Supplier</th><th>Unit Price</th><th>Total Value</th><th>Model Offered</th><th>Delivery</th><th>Warranty</th><th>GST Incl.</th><th>Payment</th><th>AMC/yr</th><th>Score</th></tr></thead>
+        <thead><tr><th>Supplier</th><th>Source</th><th>Unit Price</th><th>Total Value</th><th>Model Offered</th><th>Delivery</th><th>Warranty</th><th>GST Incl.</th><th>Payment</th><th>AMC/yr</th><th>Score</th></tr></thead>
         <tbody>${compRows}</tbody>
       </table>
       <div class="scorecards">
