@@ -4,8 +4,8 @@
    Aria — AI Sourcing Copilot  ·  app.js
    ═══════════════════════════════════════════ */
 
-const STATE_KEY = 'aria_v8_state';
-const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state', 'aria_v7_state'];
+const STATE_KEY = 'aria_v9_state';
+const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state', 'aria_v7_state', 'aria_v8_state'];
 
 const EVENT_CATEGORY = 'Office Furniture';
 const EVENT_ITEM_NAME = 'Ergonomic Office Chair';
@@ -825,6 +825,27 @@ function getBidRows() {
   });
 }
 
+function keyInsightsList(items) {
+  return `<ul class="key-insights-list">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+}
+
+function buildBidKeyInsights(bids, lowest, qty, savingsStr, savingsPct) {
+  const highest = bids.reduce((a, b) => a.up > b.up ? a : b);
+  const spread = highest.up - lowest.up;
+  const spreadPct = ((spread / lowest.up) * 100).toFixed(1);
+  const belowTarget = bids.filter(b => b.up < S.targetPrice).length;
+  const fastest = bids.reduce((a, b) => parseInt(a.del, 10) < parseInt(b.del, 10) ? a : b);
+  const slowest = bids.reduce((a, b) => parseInt(a.del, 10) > parseInt(b.del, 10) ? a : b);
+  const topScore = bids.reduce((a, b) => a.score > b.score ? a : b);
+
+  return keyInsightsList([
+    `<strong>Price leader:</strong> ${lowest.name} at ${formatPrice(lowest.up)}/unit — lowest of 4 responses and ${formatPrice(S.targetPrice - lowest.up)}/unit below your ${formatPrice(S.targetPrice)} target`,
+    `<strong>Competitive spread:</strong> All bids fall within ${formatPrice(spread)}/unit (${spreadPct}%) — ${belowTarget} of 4 suppliers bid below target, giving you room to negotiate`,
+    `<strong>Delivery:</strong> ${fastest.name} offers the fastest delivery at ${fastest.del}; longest quoted lead time is ${slowest.del}`,
+    `<strong>Requirement fit:</strong> ${topScore.name} leads on match score (${topScore.score}/100); estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) if you award to ${lowest.name} for ${qty} chairs`,
+  ]);
+}
+
 function monitorCard() {
   const qty = getTotalQty();
   const bids = getBidRows().map(b => ({
@@ -860,6 +881,12 @@ function monitorCard() {
       <div class="insight-chip">Responses: <span class="chip-value">4 of ${S.selectedNums.length || 7}</span></div>
     </div>`;
 
+  const keyInsights = `
+    <div class="key-insights-card">
+      <div class="key-insights-title">💡 Key Insights</div>
+      ${buildBidKeyInsights(bids, lowest, qty, savingsStr, savingsPct)}
+    </div>`;
+
   const scorecard = (name, bars) => `
     <div class="scorecard">
       <h4>${name}</h4>
@@ -877,6 +904,7 @@ function monitorCard() {
 
   return `<p>4 supplier responses analysed against your target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong>:</p>
   ${insights}
+  ${keyInsights}
   <div class="card">
     <div class="card-header">📊 Bid Comparison <span class="benchmark-ref">Target: ${formatPrice(S.targetPrice)}/unit</span></div>
     <div class="card-body" style="overflow-x:auto;">
@@ -1000,19 +1028,39 @@ function dynamicCompareCard(id1, id2) {
     return better;
   };
 
-  const criteria = [
+  const rows = [
     { c: 'Unit Price', v1: formatPrice(b1.up), v2: formatPrice(b2.up), edge: edge(b1.up, b2.up, false) },
     { c: `Total Value (${qty} chairs)`, v1: formatLakhs(b1.up * qty), v2: formatLakhs(b2.up * qty), edge: edge(b1.up, b2.up, false) },
     { c: 'Model', v1: b1.model, v2: b2.model, edge: '—' },
-    { c: 'Delivery', v1: b1.del, v2: b2.del, edge: edge(parseInt(b1.del), parseInt(b2.del), false) },
+    { c: 'Delivery', v1: b1.del, v2: b2.del, edge: edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false) },
     { c: 'Warranty', v1: b1.war, v2: b2.war, edge: b1.war === b2.war ? 'Tie' : '—' },
     { c: 'Lumbar Support', v1: b1.lumbar, v2: b2.lumbar, edge: '—' },
     { c: 'Armrests', v1: b1.armrests, v2: b2.armrests, edge: '—' },
     { c: 'Payment Terms', v1: b1.pay, v2: b2.pay, edge: '—' },
-    { c: 'AMC/yr', v1: b1.amc, v2: b2.amc, edge: edge(parseInt(b1.amc.replace(/\D/g, '')), parseInt(b2.amc.replace(/\D/g, '')), false) },
+    { c: 'AMC/yr', v1: b1.amc, v2: b2.amc, edge: edge(parseInt(b1.amc.replace(/\D/g, ''), 10), parseInt(b2.amc.replace(/\D/g, ''), 10), false) },
     { c: 'Match Score', v1: `${b1.score}/100`, v2: `${b2.score}/100`, edge: edge(b1.score, b2.score, true) },
     { c: `vs Target (${formatPrice(S.targetPrice)})`, v1: s1 >= 0 ? `${formatSavingsAmount(s1)} saved` : `${formatSavingsAmount(s1)} over`, v2: s2 >= 0 ? `${formatSavingsAmount(s2)} saved` : `${formatSavingsAmount(s2)} over`, edge: edge(s1, s2, true) },
-  ].map(r => `<tr><td>${r.c}</td><td>${r.v1}</td><td>${r.v2}</td><td style="font-weight:600;color:#2563EB">${r.edge}</td></tr>`).join('');
+  ];
+
+  const criteria = rows.map(r => `<tr><td>${r.c}</td><td>${r.v1}</td><td>${r.v2}</td><td style="font-weight:600;color:#2563EB">${r.edge}</td></tr>`).join('');
+
+  const wins = { [n1]: 0, [n2]: 0 };
+  rows.forEach(r => {
+    if (r.edge === n1) wins[n1]++;
+    else if (r.edge === n2) wins[n2]++;
+  });
+
+  const verdictName = cheaper.bid.score >= other.bid.score - 3 ? cheaper.name : other.name;
+  const verdictBid = verdictName === cheaper.name ? cheaper.bid : other.bid;
+  const verdictOther = verdictName === cheaper.name ? other.bid : cheaper.bid;
+  const verdictOtherName = verdictName === cheaper.name ? other.name : cheaper.name;
+
+  const rationale = [
+    `<strong>Price:</strong> ${cheaper.name} bids ${formatPrice(diff)}/unit lower — ${formatLakhs(diffTotal)} less on ${qty} chairs`,
+    `<strong>Delivery:</strong> ${edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false) === 'Tie' ? 'Both quote similar lead times' : `${edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false)} offers faster delivery`} (${b1.del} vs ${b2.del})`,
+    `<strong>Commercial terms:</strong> ${b1.war === b2.war ? 'Warranty is comparable' : 'Warranty terms differ'}; AMC is ${b1.amc} (${n1}) vs ${b2.amc} (${n2})`,
+    `<strong>Overall:</strong> ${verdictName} wins on ${wins[verdictName]} of ${rows.filter(r => r.edge !== '—' && r.edge !== 'Tie').length} scored criteria with a ${verdictBid.score}/100 requirement match${verdictName === cheaper.name ? ` and the lowest unit price` : `, despite ${cheaper.name} being ${formatPrice(diff)}/unit cheaper`}`,
+  ];
 
   return `<p>Here's a detailed comparison of <strong>${n1}</strong> vs <strong>${n2}</strong>:</p>
   <div class="card">
@@ -1022,11 +1070,14 @@ function dynamicCompareCard(id1, id2) {
         <thead><tr><th>Criteria</th><th>${n1}</th><th>${n2}</th><th>Edge</th></tr></thead>
         <tbody>${criteria}</tbody>
       </table>
-      <div class="compare-verdict">
-        <strong>Summary:</strong> ${cheaper.name} is ${formatPrice(diff)}/unit lower (${formatLakhs(diffTotal)} on ${qty} chairs).
-        ${cheaper.bid.score >= other.bid.score - 3
-    ? ` With a ${cheaper.bid.score}/100 requirement match, ${cheaper.name} offers stronger overall value.`
-    : ` However, ${other.name} scores higher on requirement fit (${other.bid.score} vs ${cheaper.bid.score}).`}
+      <div class="compare-verdict-banner">
+        <div class="verdict-label">Verdict</div>
+        <div class="verdict-winner">Recommend <strong>${verdictName}</strong> for award</div>
+        <p class="verdict-summary">${verdictName} offers stronger overall value with a ${verdictBid.score}/100 match score${verdictName === cheaper.name ? ` and the lowest price at ${formatPrice(verdictBid.up)}/unit` : `, scoring ${verdictBid.score - verdictOther.score} points higher than ${verdictOtherName} despite a ${formatPrice(diff)}/unit premium`}.</p>
+      </div>
+      <div class="compare-rationale">
+        <div class="key-insights-title">Rationale</div>
+        ${keyInsightsList(rationale)}
       </div>
     </div>
   </div>
