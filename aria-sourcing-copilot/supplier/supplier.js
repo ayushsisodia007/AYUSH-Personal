@@ -7,16 +7,16 @@ const EVENT = {
   location: 'Bangalore',
   deadline: '21 Aug 2026 · 5:00 PM IST',
   currency: 'INR (₹)',
-  qty: 120,
+  qty: 50,
   item: 'Ergonomic Office Chair',
   specs: 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, minimum 3-year warranty',
   questions: [
-    'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).',
-    'What is your delivery timeline to Bangalore?',
-    'Do you include on-site assembly and installation at our Bangalore office? If yes, please provide pricing.',
-    'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).',
-    'Please confirm GST treatment and provide your GSTIN for invoicing.',
-    'What are your payment terms? Do you accept 30/60/90 day credit?',
+    { key: 'model', label: 'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).' },
+    { key: 'delivery', label: 'What is your delivery timeline to Bangalore?' },
+    { key: 'assembly', label: 'Do you include on-site assembly and installation at our Bangalore office? If yes, please provide pricing.' },
+    { key: 'warranty', label: 'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).' },
+    { key: 'gstin', label: 'Please confirm GST treatment and provide your GSTIN for invoicing.' },
+    { key: 'payment', label: 'What are your payment terms? Do you accept 30/60/90 day credit?' },
   ],
 };
 
@@ -66,25 +66,36 @@ function renderEvent() {
     <strong>${sup.name}</strong>
     ${sup.contact} · Event ${eventId}`;
 
+  document.getElementById('supplierGreeting').textContent =
+    `Hi ${sup.contact}, you have been invited to submit your quotation for ${EVENT.name} — please review the details below and respond before ${EVENT.deadline}.`;
+
   document.getElementById('eventMeta').innerHTML = `
     <div class="meta-item"><label>Event</label><span>${EVENT.name}</span></div>
     <div class="meta-item"><label>Event ID</label><span>${eventId}</span></div>
     <div class="meta-item"><label>Category</label><span>${EVENT.category}</span></div>
     <div class="meta-item"><label>Delivery</label><span>${EVENT.location}</span></div>
-    <div class="meta-item"><label>Quantity</label><span>${EVENT.qty} chairs</span></div>
     <div class="meta-item"><label>Deadline</label><span class="highlight">${EVENT.deadline}</span></div>
     <div class="meta-item"><label>Currency</label><span>${EVENT.currency}</span></div>`;
 
-  document.querySelector('#lineItemsTable tbody').innerHTML = `
+  document.getElementById('pricingBody').innerHTML = `
     <tr>
       <td><strong>${EVENT.item}</strong></td>
       <td>${EVENT.specs}</td>
-      <td>${EVENT.qty}</td>
+      <td class="qty-cell">${EVENT.qty}</td>
+      <td class="price-cell">
+        <input type="number" name="unitPrice" form="bidForm" required min="1" class="price-input" placeholder="Enter price" id="unitPriceInput">
+      </td>
       <td>${EVENT.location}</td>
     </tr>`;
 
-  document.getElementById('rfqQuestions').innerHTML = EVENT.questions
-    .map(q => `<li>${q}</li>`).join('');
+  document.getElementById('rfqAnswers').innerHTML = EVENT.questions.map((q, i) => `
+    <div class="rfq-answer-block">
+      <label class="rfq-q" for="answer-${q.key}">
+        <span class="q-num">Q${i + 1}</span>
+        ${q.label}
+      </label>
+      <textarea id="answer-${q.key}" name="${q.key}" rows="2" required placeholder="Your answer…"></textarea>
+    </div>`).join('');
 }
 
 function switchMethod(method) {
@@ -125,11 +136,17 @@ function showSuccess(data, source) {
   document.getElementById('successMessage').textContent =
     `Aria has understood your ${source === 'pdf' ? 'PDF quotation' : 'form submission'} and mapped all responses to the RFQ requirements.`;
 
+  const questionRows = source === 'form'
+    ? EVENT.questions.map((q, i) => `<dt>Q${i + 1}</dt><dd>${data[q.key]}</dd>`).join('')
+    : '';
+
   document.getElementById('successSummary').innerHTML = `
     <dl>
-      ${bidFields(data).map(f => `<dt>${f.label}</dt><dd>${f.value}</dd>`).join('')}
-      <dt>Total bid value</dt><dd>${formatPrice(total)} (${EVENT.qty} chairs)</dd>
-      <dt>Source file</dt><dd>${source === 'pdf' ? uploadedFileName : 'Online form'}</dd>
+      <dt>Unit price</dt><dd>${formatPrice(data.unitPrice)}</dd>
+      <dt>Quantity</dt><dd>${EVENT.qty} chairs</dd>
+      <dt>Total bid value</dt><dd>${formatPrice(total)}</dd>
+      ${source === 'form' ? questionRows : bidFields(data).map(f => `<dt>${f.label}</dt><dd>${f.value}</dd>`).join('')}
+      <dt>Source</dt><dd>${source === 'pdf' ? uploadedFileName : 'Online form'}</dd>
     </dl>`;
 
   document.getElementById('successRef').textContent =
@@ -140,16 +157,10 @@ function showSuccess(data, source) {
 }
 
 function formToBid(form) {
-  return {
-    model: form.model.value.trim(),
-    unitPrice: parseInt(form.unitPrice.value, 10),
-    delivery: form.delivery.value.trim(),
-    assembly: form.assembly.value.trim(),
-    warranty: form.warranty.value.trim(),
-    gstin: form.gstin.value.trim(),
-    payment: form.payment.value.trim(),
-    amc: form.amc.value.trim(),
-  };
+  const bid = { unitPrice: parseInt(form.unitPrice.value, 10) };
+  EVENT.questions.forEach(q => { bid[q.key] = form[q.key].value.trim(); });
+  bid.model = bid.model;
+  return bid;
 }
 
 function handlePdf(file) {

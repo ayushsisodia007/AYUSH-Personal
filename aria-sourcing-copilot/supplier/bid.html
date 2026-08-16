@@ -22,28 +22,29 @@
       <div class="supplier-meta" id="supplierMeta"></div>
     </header>
 
+    <p class="supplier-greeting" id="supplierGreeting"></p>
+
     <main class="supplier-main">
       <!-- Event details -->
       <section class="card">
         <div class="card-header">📋 Event Details</div>
         <div class="card-body">
           <div class="meta-grid" id="eventMeta"></div>
-          <h3 class="section-label">Line Items</h3>
+          <h3 class="section-label">Pricing Table</h3>
           <div class="table-wrap">
-            <table class="data-table" id="lineItemsTable">
+            <table class="data-table pricing-table" id="pricingTable">
               <thead>
                 <tr>
                   <th>Item</th>
                   <th>Specifications</th>
                   <th>Qty</th>
+                  <th>Unit Price (₹)</th>
                   <th>Location</th>
                 </tr>
               </thead>
-              <tbody></tbody>
+              <tbody id="pricingBody"></tbody>
             </table>
           </div>
-          <h3 class="section-label">RFQ Questions</h3>
-          <ol class="rfq-list" id="rfqQuestions"></ol>
         </div>
       </section>
 
@@ -61,40 +62,9 @@
           <!-- Form path -->
           <div class="method-panel active" id="panelForm">
             <form id="bidForm" class="bid-form">
-              <div class="form-grid">
-                <label class="field span-2">
-                  <span>Model &amp; specifications *</span>
-                  <textarea name="model" rows="3" required placeholder="e.g. Optima Max Mesh — adjustable lumbar, 3D armrests, breathable mesh back"></textarea>
-                </label>
-                <label class="field">
-                  <span>Unit price (₹) *</span>
-                  <input type="number" name="unitPrice" required min="1" placeholder="13800">
-                </label>
-                <label class="field">
-                  <span>Delivery timeline *</span>
-                  <input type="text" name="delivery" required placeholder="e.g. 10 working days to Bangalore">
-                </label>
-                <label class="field span-2">
-                  <span>Assembly &amp; installation *</span>
-                  <input type="text" name="assembly" required placeholder="e.g. Included — on-site assembly at Bangalore office">
-                </label>
-                <label class="field">
-                  <span>Warranty *</span>
-                  <input type="text" name="warranty" required placeholder="e.g. 3 years onsite">
-                </label>
-                <label class="field">
-                  <span>GSTIN *</span>
-                  <input type="text" name="gstin" required placeholder="e.g. 29AABCF1234F1Z5">
-                </label>
-                <label class="field">
-                  <span>Payment terms *</span>
-                  <input type="text" name="payment" required placeholder="e.g. Net 45">
-                </label>
-                <label class="field">
-                  <span>AMC / year (optional)</span>
-                  <input type="text" name="amc" placeholder="e.g. ₹850/yr">
-                </label>
-              </div>
+              <h3 class="section-label">RFQ Questions</h3>
+              <p class="form-hint">Please answer each question below. All fields are required.</p>
+              <div class="rfq-answers" id="rfqAnswers"></div>
               <button type="submit" class="btn-primary">Submit bid →</button>
             </form>
           </div>
