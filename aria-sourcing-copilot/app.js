@@ -4,52 +4,67 @@
    Aria — AI Sourcing Copilot  ·  app.js
    ═══════════════════════════════════════════ */
 
-const STATE_KEY = 'aria_v9_state';
-const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state', 'aria_v7_state', 'aria_v8_state'];
+const STATE_KEY = 'aria_v10_state';
+const LEGACY_STATE_KEYS = ['aria_v4_state', 'aria_v5_state', 'aria_v6_state', 'aria_v7_state', 'aria_v8_state', 'aria_v9_state'];
 
 const EVENT_CATEGORY = 'Office Furniture';
-const EVENT_ITEM_NAME = 'Ergonomic Office Chair';
-const EVENT_ITEM_DESC = 'Adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, minimum 3-year warranty';
+const EVENT_SUBCATEGORY = 'Desks';
+const EVENT_ITEM_NAME = 'Height-adjustable office desks';
+const EVENT_SUB_ITEMS = ['Height-adjustable office desks', 'Monitor arms'];
+const EVENT_ITEM_DESC = 'Height-adjustable office desks with monitor arms, delivery and on-site assembly at Bangalore campus';
 
-const TARGET_PRICE = 14500;
-const BENCHMARK_MIN = 12800;
-const BENCHMARK_MAX = 16200;
+const TARGET_PRICE = 18500;
+const BENCHMARK_MIN = 16200;
+const BENCHMARK_MAX = 21800;
 
 const DEADLINE_DEFAULT = { date: '21 Aug 2026', time: '5:00 PM IST' };
 
+const QUALIFIED_INCUMBENT_IDS = [1, 2];
+const EXTERNAL_SUPPLIER_IDS = [5, 6];
+const RECOMMENDED_SUPPLIER_IDS = [1, 2, 5, 6];
+
 const SUPPLIER_DATA = [
-  { id: 1, name: 'Featherlite Ergo', score: 92, contact: 'Anita Desai', email: 'anita.desai@featherlite.com', source: 'Internal', recommended: true,
-    onTime: 96, pastPOs: 9,
-    rationale: 'Leading ergonomic chair specialist. Strongest track record for bulk office fit-outs in Bangalore.' },
-  { id: 2, name: 'Godrej Interio', score: 89, contact: 'Rahul Mehta', email: 'rahul.mehta@godrejinterio.com', source: 'Internal',
-    onTime: 94, pastPOs: 7,
-    rationale: 'Premium build quality with pan-India service network. Competitive on warranty and assembly.' },
-  { id: 3, name: 'Durian Industries', score: 86, contact: 'Priya Nair', email: 'priya.nair@durian.in', source: 'Internal',
-    onTime: 91, pastPOs: 5,
-    rationale: 'Cost-effective mesh chairs with good ergonomic certifications. Reliable for large-volume orders.' },
-  { id: 4, name: 'Nilkamal Furniture', score: 82, contact: 'Vikram Shah', email: 'vikram.shah@nilkamal.com', source: 'Internal',
-    onTime: 88, pastPOs: 4,
-    rationale: 'Value-oriented option with fast delivery. Suitable for standard ergonomic requirements.' },
-  { id: 5, name: 'Spacewood Solutions', score: 80, contact: 'Deepa Krishnan', email: 'deepa.krishnan@spacewood.in', source: 'AI Discovered',
-    onTime: 87, pastPOs: 0,
-    rationale: 'AI-discovered vendor with competitive mesh chair portfolio and GST-compliant billing.' },
-  { id: 6, name: 'Wipro Furniture', score: 78, contact: 'Arjun Reddy', email: 'arjun.reddy@wiprofurniture.com', source: 'AI Discovered',
-    onTime: 85, pastPOs: 0,
-    rationale: 'Enterprise furniture supplier with custom configuration options for ergonomic seating.' },
-  { id: 7, name: 'Urban Ladder Business', score: 75, contact: 'Sneha Rao', email: 'sneha.rao@urbanladder.com', source: 'AI Discovered',
-    onTime: 83, pastPOs: 0,
-    rationale: 'Emerging B2B player with modern designs. Aggressive pricing on bulk chair orders.' },
+  { id: 1, name: 'Featherlite Ergo', score: 92, contact: 'Anita Desai', email: 'anita.desai@featherlite.com', source: 'Internal', qualified: true,
+    onTime: 96, pastPOs: 9, categoryRelevance: 'Office furniture — desks & workstations',
+    ecoVadis: 'Gold · 72/100', dnB: 'AA · Low risk',
+    priceSignal: 'Historically 4–6% below category average',
+    rationale: 'Leading office furniture specialist with strongest track record for bulk workstation fit-outs in Bangalore.' },
+  { id: 2, name: 'Godrej Interio', score: 89, contact: 'Rahul Mehta', email: 'rahul.mehta@godrejinterio.com', source: 'Internal', qualified: true,
+    onTime: 94, pastPOs: 7, categoryRelevance: 'Workplace furniture — desks & storage',
+    ecoVadis: 'Silver · 68/100', dnB: 'AA · Low risk',
+    priceSignal: 'Competitive on bundled delivery + assembly',
+    rationale: 'Premium build quality with pan-India service network. Strong delivery performance on campus installations.' },
+  { id: 3, name: 'Durian Industries', score: 86, contact: 'Priya Nair', email: 'priya.nair@durian.in', source: 'Internal', qualified: false,
+    onTime: 91, pastPOs: 5, categoryRelevance: 'Office furniture — general',
+    ecoVadis: 'Silver · 61/100', dnB: 'A · Moderate risk',
+    priceSignal: 'Value-oriented pricing',
+    rationale: 'Cost-effective furniture with good certifications. Reliable for standard requirements but limited campus assembly experience.' },
+  { id: 4, name: 'Nilkamal Furniture', score: 82, contact: 'Vikram Shah', email: 'vikram.shah@nilkamal.com', source: 'Internal', qualified: false,
+    onTime: 88, pastPOs: 4, categoryRelevance: 'Office furniture — general',
+    ecoVadis: 'Committed · 55/100', dnB: 'BBB · Moderate risk',
+    priceSignal: 'Lowest historical unit prices',
+    rationale: 'Value-oriented option with fast delivery. Less experience with height-adjustable desk specifications.' },
+  { id: 5, name: 'Spacewood Solutions', score: 84, contact: 'Deepa Krishnan', email: 'deepa.krishnan@spacewood.in', source: 'AI Discovered',
+    onTime: 90, pastPOs: 0, categoryRelevance: 'Office furniture — desks & workstations',
+    ecoVadis: 'Silver · 64/100', dnB: 'A · Moderate risk',
+    priceSignal: 'Competitive lead-time profile',
+    rationale: 'Strong office-furniture category experience, Bangalore delivery coverage and competitive lead-time profile.' },
+  { id: 6, name: 'Wipro Furniture', score: 81, contact: 'Arjun Reddy', email: 'arjun.reddy@wiprofurniture.com', source: 'AI Discovered',
+    onTime: 87, pastPOs: 0, categoryRelevance: 'Enterprise workplace furniture',
+    ecoVadis: 'Committed · 58/100', dnB: 'A · Moderate risk',
+    priceSignal: 'Aggressive pricing on bulk orders',
+    rationale: 'Enterprise furniture supplier with custom workstation configuration and GST-compliant billing for campus deliveries.' },
 ];
 
 const BID_RESPONSES = {
-  1: { up: 13800, model: 'Optima Max Mesh', del: '10 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹850/yr', score: 92, source: 'platform',
-    lumbar: 'Adjustable lumbar', armrests: '3D adjustable', mesh: 'Breathable mesh', assembly: 'Included', hist: '96/100' },
-  2: { up: 14200, model: 'Interio ErgoPro', del: '12 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹920/yr', score: 89, source: 'pdf',
-    lumbar: 'Adjustable lumbar', armrests: '3D adjustable', mesh: 'Breathable mesh', assembly: 'Included', hist: '90/100' },
-  3: { up: 14500, model: 'Durian FlexiMesh X', del: '14 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹780/yr', score: 86, source: 'email',
-    lumbar: 'Adjustable lumbar', armrests: '2D adjustable', mesh: 'Breathable mesh', assembly: 'On request', hist: '85/100' },
-  4: { up: 14800, model: 'Nilkamal Thames', del: '11 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 60', amc: '₹700/yr', score: 82, source: 'scanned',
-    lumbar: 'Fixed lumbar', armrests: 'Adjustable', mesh: 'Mesh back', assembly: 'Extra charge', hist: '82/100' },
+  1: { up: 17800, model: 'Optima Sit-Stand Pro', del: '12 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 45', amc: '₹1,200/yr', score: 92, source: 'platform',
+    specs: 'Height range 65–125 cm', monitorArm: 'Dual-arm compatible, 9 kg load', assembly: 'Included', hist: '96/100' },
+  2: { up: 18200, model: 'Interio WorkPro Desk', del: '14 days', war: '3 yr onsite', gst: 'Yes', pay: 'Net 30', amc: '₹1,350/yr', score: 89, source: 'pdf',
+    specs: 'Height range 68–120 cm', monitorArm: 'Single/dual arm, 8 kg load', assembly: 'Included', hist: '90/100' },
+  3: { up: 18500, model: 'Durian FlexiDesk X', del: '16 days', war: '3 yr carry-in', gst: 'Yes', pay: 'Net 45', amc: '₹980/yr', score: 86, source: 'email',
+    specs: 'Height range 70–118 cm', monitorArm: 'Single arm, 7 kg load', assembly: 'On request', hist: '85/100' },
+  4: { up: 18800, model: 'Nilkamal Elevate', del: '13 days', war: '2 yr carry-in', gst: 'Yes', pay: 'Net 60', amc: '₹850/yr', score: 82, source: 'scanned',
+    specs: 'Height range 72–115 cm', monitorArm: 'Single arm, 6 kg load', assembly: 'Extra charge', hist: '82/100' },
 };
 
 const SUBMISSION_SOURCE_LABELS = {
@@ -66,59 +81,64 @@ function submissionSourceBadge(source) {
 
 const SUPPLIER_ALIASES = {
   featherlite: 1, godrej: 2, interio: 2, durian: 3, nilkamal: 4,
-  spacewood: 5, wipro: 6, urban: 7, ladder: 7,
+  spacewood: 5, wipro: 6,
 };
 
 const INTERNAL_BENCHMARKS = [
-  { po: 'PO-2025-112', date: 'Feb 2025', supplier: 'Featherlite Ergo', item: 'Ergonomic Mesh Chair', price: 13600, qty: 80, conf: 92 },
-  { po: 'PO-2024-087', date: 'Oct 2024', supplier: 'Godrej Interio', item: 'ErgoPro Executive', price: 14100, qty: 60, conf: 88 },
-  { po: 'PO-2024-044', date: 'Jun 2024', supplier: 'Durian Industries', item: 'FlexiMesh Standard', price: 13900, qty: 100, conf: 80 },
-  { po: 'PO-2023-219', date: 'Mar 2023', supplier: 'Nilkamal Furniture', item: 'Thames Mesh Chair', price: 12800, qty: 50, conf: 72 },
-  { po: 'PO-2023-156', date: 'Jan 2023', supplier: 'Featherlite Ergo', item: 'Optima Lite Mesh', price: 13200, qty: 40, conf: 68 },
+  { po: 'PO-2025-112', date: 'Feb 2025', supplier: 'Featherlite Ergo', item: 'Sit-Stand Desk Pro', price: 17200, qty: 60, conf: 92 },
+  { po: 'PO-2024-087', date: 'Oct 2024', supplier: 'Godrej Interio', item: 'WorkPro Height-Adjustable', price: 17800, qty: 40, conf: 88 },
+  { po: 'PO-2024-044', date: 'Jun 2024', supplier: 'Durian Industries', item: 'FlexiDesk Standard', price: 17500, qty: 80, conf: 80 },
+  { po: 'PO-2023-219', date: 'Mar 2023', supplier: 'Nilkamal Furniture', item: 'Elevate Desk', price: 16200, qty: 30, conf: 72 },
+  { po: 'PO-2023-156', date: 'Jan 2023', supplier: 'Featherlite Ergo', item: 'Optima Desk Lite', price: 16800, qty: 25, conf: 68 },
 ];
 
 const EXTERNAL_BENCHMARKS = [
-  { source: 'Amazon Business', ref: 'Ergonomic Mesh Chair (3D arms)', price: 14999, conf: 85, link: 'amazon.in' },
-  { source: 'Flipkart B2B', ref: 'Executive Mesh Chair Pro', price: 14250, conf: 78, link: 'flipkart.com' },
-  { source: 'IndustryBuy', ref: 'Office Ergo Chair — Lumbar', price: 15100, conf: 82, link: 'industrybuy.com' },
-  { source: 'Udaan Business', ref: 'Mesh Back Task Chair', price: 13890, conf: 70, link: 'udaan.com' },
+  { source: 'Amazon Business', ref: 'Electric Height-Adjustable Desk', price: 19999, conf: 85, link: 'amazon.in' },
+  { source: 'Flipkart B2B', ref: 'Sit-Stand Workstation Pro', price: 18950, conf: 78, link: 'flipkart.com' },
+  { source: 'IndustryBuy', ref: 'Office Desk — Electric Adjust', price: 20400, conf: 82, link: 'industrybuy.com' },
+  { source: 'Udaan Business', ref: 'Height-Adjustable Work Desk', price: 18190, conf: 70, link: 'udaan.com' },
 ];
 
 const LINE_ITEMS = [
-  { item: EVENT_ITEM_NAME, desc: EVENT_ITEM_DESC, uom: 'Units', qty: 120, category: EVENT_CATEGORY, location: 'Bangalore' },
+  { item: EVENT_ITEM_NAME, desc: EVENT_ITEM_DESC, uom: 'Units', qty: 50, category: EVENT_CATEGORY, location: 'Bangalore' },
 ];
 
 function getRfqQuestions() {
   const location = getLocationsLabel();
   return [
-    'Please confirm the exact ergonomic chair model and specifications you are quoting (lumbar support, armrests, mesh back, seat height).',
-    `What is your delivery timeline to ${location}?`,
-    `Do you include on-site assembly and installation at our ${location} office? If yes, please provide pricing.`,
-    'What is the warranty period? Please confirm minimum 3-year warranty with coverage details (onsite vs carry-in).',
-    'Please confirm GST treatment and provide your GSTIN for invoicing.',
-    'What are your payment terms? Do you accept 30/60/90 day credit?',
+    'Please confirm the exact desk model and specifications, including dimensions and height-adjustment range.',
+    'Please confirm the monitor arm specifications, compatibility and maximum supported load.',
+    `Please confirm the delivery timeline to the ${location} campus.`,
+    'Please confirm whether delivery, assembly and installation are included in the quoted price.',
+    'Please confirm the warranty period and coverage, including onsite vs carry-in support.',
+    'Please provide the unit price, GST treatment/GSTIN and payment terms.',
   ];
 }
 
 const STEP_LABELS = [
-  'Welcome', 'Requirement Captured', 'Metadata Confirmed', 'RFQ Preview',
-  'Attachments', 'RFQ Created', 'Price Benchmarks', 'Supplier Panel', 'Deadline Confirmation',
-  'RFQ Published', 'Monitor Responses', 'Award',
+  'Welcome', 'Category Intelligence', 'Requirement Summary', 'RFQ Questions',
+  'RFQ Preview', 'Attachments', 'RFQ Created', 'Price Benchmarks',
+  'Incumbent Suppliers', 'External Search', 'External Suppliers', 'Supplier Panel',
+  'Deadline Confirmation', 'RFQ Published', 'Monitor Responses', 'Award',
 ];
 
 const CHIPS = {
   0: [],
-  1: ['Yes, looks good', 'Add more line items', 'Change quantity'],
-  2: ['Yes, proceed', 'Edit event name', 'Change a question'],
-  3: ['Upload attachments', 'Create without attachments'],
-  4: ['Done uploading'],
-  5: ['Proceed to benchmarks', 'Yes, proceed'],
-  6: ['Show suppliers', 'Yes, proceed'],
-  7: ['Add 1, 2, 3', 'Add all', 'Show more details'],
-  8: ['Yes, 21 Aug works', 'Change to 25 Aug'],
-  9: [],
-  10: ['Proceed to award'],
-  11: [],
+  1: ['Add ergonomic chairs', 'Proceed with desks only'],
+  2: ['Yes, looks good', 'Add more line items', 'Change quantity'],
+  3: ['Yes, proceed', 'Edit event name', 'Change a question'],
+  4: ['Upload attachments', 'Create without attachments'],
+  5: [],
+  6: ['Proceed to benchmarks', 'Yes, proceed'],
+  7: ['Show suppliers', 'Yes, proceed'],
+  8: [],
+  9: ['Yes, search external suppliers', 'Proceed with these 2 suppliers'],
+  10: [],
+  11: ['Add all 4 suppliers', 'Review suppliers'],
+  12: ['Yes, 21 Aug works', 'Change to 25 Aug'],
+  13: [],
+  14: ['Proceed to award'],
+  15: [],
 };
 
 let S = loadState();
@@ -129,8 +149,9 @@ function defaultState() {
     chatStarted: false,
     messages: [],
     userPrompt: '',
-    eventName: 'Office Chairs Sourcing — Bangalore — Aug 2026',
+    eventName: 'Office Desks Sourcing — Bangalore — Aug 2026',
     eventCategory: EVENT_CATEGORY,
+    includeChairs: false,
     suppliers: {},
     selectedNums: [],
     awardDone: false,
@@ -148,6 +169,8 @@ function defaultState() {
     responsesNotified: false,
     awaitingAnalysisConsent: false,
     analysisComplete: false,
+    externalSearchDone: false,
+    suppliersAdded: false,
   };
 }
 
@@ -156,7 +179,7 @@ const RESPONSES_MSG = '<p>🎉 4 supplier responses received.</p><p>I\'ve receiv
 
 function isStaleHardwareData(value) {
   const blob = JSON.stringify(value || '').toLowerCase();
-  return /\b(laptop|laptops|dell|hp enterprise|intel|windows|512gb|16gb ram|it hardware|it equipment|latitude|thinkpad|elitebook|ingram micro|business laptop)\b/.test(blob);
+  return /\b(laptop|laptops|dell|hp enterprise|intel|windows|512gb|16gb ram|it hardware|it equipment|latitude|thinkpad|elitebook|ingram micro|business laptop|ergonomic office chair|120 chairs|120 ergonomic)\b/.test(blob);
 }
 
 function normalizeLineItems(items) {
@@ -165,7 +188,7 @@ function normalizeLineItems(items) {
     item: EVENT_ITEM_NAME,
     desc: li.desc && !isStaleHardwareData(li.desc) ? li.desc : EVENT_ITEM_DESC,
     uom: li.uom || 'Units',
-    qty: li.qty || 120,
+    qty: li.qty || 50,
     category: EVENT_CATEGORY,
     location: li.location || 'Bangalore',
   }));
@@ -182,7 +205,7 @@ function loadState() {
     state.eventCategory = EVENT_CATEGORY;
     if (!state.eventName || isStaleHardwareData(state.eventName)) {
       const loc = (state.locations && state.locations[0]) || 'Bangalore';
-      state.eventName = `Office Chairs Sourcing — ${loc} — Aug 2026`;
+      state.eventName = `Office Desks Sourcing — ${loc} — Aug 2026`;
     }
     state.targetPrice = TARGET_PRICE;
     state.benchmarkMin = BENCHMARK_MIN;
@@ -237,7 +260,7 @@ function getDeadlineLabel() {
 
 async function showRfqCreated() {
   S.rfqCreated = true;
-  S.step = 5;
+  S.step = 6;
   saveState();
   updateUI();
   await ariaSay(rfqCreatedCard());
@@ -265,61 +288,32 @@ function validatePrompt(text) {
 
 function parseRequirement(text) {
   const t = text;
-  const specs = [];
-  if (/lumbar|adjustable\s+lumbar/i.test(t)) specs.push('Adjustable lumbar support');
-  if (/3d\s*armrest|3-d\s*armrest/i.test(t)) specs.push('3D armrests');
-  if (/mesh|breathable/i.test(t)) specs.push('Breathable mesh back');
-  if (/seat\s*height|height\s*adjust/i.test(t)) specs.push('Adjustable seat height');
-  if (/3\s*year|three\s*year|minimum\s*3/i.test(t)) specs.push('Minimum 3-year warranty');
-  if (/ergonomic/i.test(t)) specs.push('Ergonomic design');
-  const desc = specs.length ? specs.join(', ') : EVENT_ITEM_DESC;
-
   const lineItems = [];
-  const locRegex = /(\d+)\s+(?:should be (?:delivered )?to|to be delivered to|to|for)\s+(\w+)(?:\s*\(([^)]+)\))?/gi;
-  let match;
-  while ((match = locRegex.exec(t)) !== null) {
-    const city = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
-    const office = match[3] ? ` (${match[3]})` : '';
-    lineItems.push({
-      item: EVENT_ITEM_NAME,
-      desc,
-      uom: 'Units',
-      qty: parseInt(match[1], 10),
-      category: EVENT_CATEGORY,
-      location: city + office,
-    });
-  }
+  const qtyMatch = t.match(/(\d+)\s+(?:ergonomic\s+)?(?:office\s+)?desks?/i)
+    || t.match(/(\d+)\s+(?:height[- ]adjustable\s+)?desks?/i)
+    || t.match(/(\d+)\s+(?:workstations?|units?)/i);
+  const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 50;
 
-  if (lineItems.length === 0) {
-    const segments = t.split(/\band\b/i);
-    for (const seg of segments) {
-      const m = seg.match(/(\d+).*?(bangalore|mumbai|delhi|hyderabad|chennai|pune)/i);
-      if (m) {
-        const office = seg.match(/\(([^)]+)\)/);
-        const city = m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase();
-        lineItems.push({
-          item: EVENT_ITEM_NAME,
-          desc,
-          uom: 'Units',
-          qty: parseInt(m[1], 10),
-          category: EVENT_CATEGORY,
-          location: office ? `${city} (${office[1]})` : city,
-        });
-      }
-    }
-  }
+  let location = 'Bangalore';
+  if (/\bbangalore\b/i.test(t)) location = 'Bangalore';
+  else if (/\bmumbai\b/i.test(t)) location = 'Mumbai';
+  else if (/\bdelhi\b/i.test(t)) location = 'Delhi';
 
-  if (lineItems.length === 0) {
-    const qtyMatch = t.match(/(\d+)\s*(?:ergonomic\s+)?(?:office\s+)?chairs?/i);
-    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 120;
-    let location = 'Bangalore';
-    if (/\bmumbai\b/i.test(t)) location = 'Mumbai';
-    else if (/\bbangalore\b/i.test(t)) location = 'Bangalore';
-    lineItems.push({ item: EVENT_ITEM_NAME, desc, uom: 'Units', qty, category: EVENT_CATEGORY, location });
-  }
+  const hasMonitorArms = /monitor\s*arm/i.test(t);
+  const items = hasMonitorArms ? EVENT_SUB_ITEMS : [EVENT_ITEM_NAME];
+  const desc = `${qty} ${items.join(' and ')} for ${location} office, including delivery and on-site assembly`;
 
-  const locations = [...new Set(lineItems.map(li => li.location))];
-  return { lineItems, locations };
+  lineItems.push({
+    item: EVENT_ITEM_NAME,
+    desc,
+    uom: 'Units',
+    qty,
+    category: EVENT_CATEGORY,
+    location,
+  });
+
+  const locations = [location];
+  return { lineItems, locations, qty, items, hasAssembly: /assembl/i.test(t), hasDelivery: /deliver/i.test(t) };
 }
 
 function getLineItems() {
@@ -357,15 +351,14 @@ async function startChat(prompt) {
   S.locations = parsed.locations;
   S.eventCategory = EVENT_CATEGORY;
   const locLabel = parsed.locations.join(' & ');
-  S.eventName = `Office Chairs Sourcing — ${locLabel} — Aug 2026`;
+  S.eventName = `Office Desks Sourcing — ${locLabel} — Aug 2026`;
   document.getElementById('chatTitle').textContent = S.eventName;
   showChat();
   addMsg('user', prompt);
   S.step = 1;
   saveState();
   updateUI();
-  await ariaSay(`Thanks! I've parsed your requirement for <strong>${esc(locLabel)}</strong>. Here's what I understood:`);
-  await ariaSay(metadataCard());
+  await ariaSay(categoryIntelligenceCard());
 }
 
 /* ── NLP Parser ── */
@@ -402,6 +395,24 @@ function nlp(text) {
   if (/\b(award|proceed to award|confirm award|select featherlite|go with featherlite)\b/.test(t))
     return { type: 'award' };
 
+  if (/\b(add all 4|add all four|invite all 4|all 4 supplier)\b/.test(t))
+    return { type: 'addAll' };
+
+  if (/\b(search external|external supplier|yes, search)\b/.test(t))
+    return { type: 'searchExternal' };
+
+  if (/\b(proceed with these 2|proceed with 2 supplier|these 2 supplier)\b/.test(t))
+    return { type: 'proceedIncumbent' };
+
+  if (/\b(proceed with desks only|desks only|proceed with desks)\b/.test(t))
+    return { type: 'proceedDesks' };
+
+  if (/\b(add ergonomic chairs|add chairs|include chairs)\b/.test(t))
+    return { type: 'addChairs' };
+
+  if (/\b(review supplier)\b/.test(t))
+    return { type: 'reviewSuppliers' };
+
   if (/\b(add all|select all|all supplier|all vendor|invite all)\b/.test(t))
     return { type: 'addAll' };
 
@@ -411,7 +422,7 @@ function nlp(text) {
   if (/\b(publish|send rfq|go live)\b/.test(t))
     return { type: 'publish' };
 
-  if (/\b(chair|furniture|ergonomic|office|source|rfq|procure|buy|purchase)\b/.test(t))
+  if (/\b(chair|furniture|ergonomic|office|desk|source|rfq|procure|buy|purchase)\b/.test(t))
     return { type: 'requirement' };
 
   if (/\b(25 aug|august 25|25th)\b/.test(t))
@@ -420,18 +431,18 @@ function nlp(text) {
   if (/\b(21 aug|august 21|21st)\b/.test(t))
     return { type: 'deadline', date: '21 Aug 2026', time: '5:00 PM IST' };
 
-  const nums = [...t.matchAll(/\b([1-7])\b/g)].map(m => parseInt(m[1], 10));
+  const nums = [...t.matchAll(/\b([1-6])\b/g)].map(m => parseInt(m[1], 10));
   if (nums.length > 0 && /\b(add|select|invite|pick|choose|include)\b/.test(t))
     return { type: 'numbered', nums: [...new Set(nums)] };
 
-  const names = { featherlite: 1, godrej: 2, interio: 2, durian: 3, nilkamal: 4, spacewood: 5, wipro: 6, urban: 7, ladder: 7 };
+  const names = { featherlite: 1, godrej: 2, interio: 2, durian: 3, nilkamal: 4, spacewood: 5, wipro: 6 };
   for (const [key, id] of Object.entries(names)) {
     if (t.includes(key)) return { type: 'named', id };
   }
 
   if (/^([1-3])\b/.test(t)) {
     const n = parseInt(t[0], 10);
-    if (S.step === 9) {
+    if (S.step === 13) {
       if (n === 1) return { type: 'remind' };
       if (n === 2) return { type: 'extend' };
       if (n === 3) return { type: 'monitor' };
@@ -514,60 +525,59 @@ function ariaSay(html, delay) {
 }
 
 /* ── Card Builders ── */
-function metadataCard() {
-  const items = getLineItems();
-  const totalQty = getTotalQty();
-  const rows = items.map(li => `
-    <tr>
-      <td>${li.item}</td>
-      <td>${li.desc}</td>
-      <td>${li.uom}</td>
-      <td>${li.qty}</td>
-      <td>${li.category}</td>
-      <td>${li.location}</td>
-    </tr>`).join('');
+function categoryIntelligenceCard() {
+  return `<p>I've identified this as an <strong>Office Furniture / Workplace Furniture</strong> requirement. Since desks are commonly sourced together with ergonomic chairs for a new office setup, I would recommend considering chairs as well.</p>
+  <p>Would you like me to add ergonomic chairs, or should I proceed with desks and monitor arms only?</p>`;
+}
 
-  return `<div class="card">
+function requirementSummaryCard() {
+  const totalQty = getTotalQty();
+  const itemsList = EVENT_SUB_ITEMS.map(i => `<li>${i}</li>`).join('');
+  const chairNote = S.includeChairs ? '<li>Ergonomic chairs</li>' : '';
+
+  return `<p>Based on the details you've provided, I've structured your sourcing requirement as follows:</p>
+  <div class="card">
     <div class="card-header">📋 Requirement Summary</div>
     <div class="card-body">
-      <div class="card-meta">
-        <div class="meta-item"><label>Category</label><span>${getEventCategory()}</span></div>
-        <div class="meta-item"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
-        <div class="meta-item"><label>Total Quantity</label><span>${totalQty} chairs</span></div>
-        <div class="meta-item"><label>Event Currency</label><span>INR (₹)</span></div>
-        <div class="meta-item"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
-        <div class="meta-item"><label>Total Line Items</label><span>${items.length}</span></div>
+      <div class="summary-block">
+        <div class="summary-row"><span class="summary-label">Category</span><span class="summary-value">${EVENT_CATEGORY} → ${EVENT_SUBCATEGORY}</span></div>
+        <div class="summary-row"><span class="summary-label">Items</span><ul class="summary-list">${itemsList}${chairNote}</ul></div>
+        <div class="summary-row"><span class="summary-label">Quantity</span><span class="summary-value">${totalQty}</span></div>
+        <div class="summary-row"><span class="summary-label">Location</span><span class="summary-value">${getLocationsLabel()}</span></div>
+        <div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value">Required at ${getLocationsLabel()} campus</span></div>
+        <div class="summary-row"><span class="summary-label">Assembly</span><span class="summary-value">Required</span></div>
+        <div class="summary-row"><span class="summary-label">Commercial preference</span><span class="summary-value">Budget-conscious, quality-focused, GST-compliant quotes</span></div>
+        <div class="summary-row summary-desc"><span class="summary-label">Description</span><span class="summary-value">${totalQty} height-adjustable office desks with monitor arms for the ${getLocationsLabel()} office, including delivery and on-site assembly. The buyer is prioritizing competitive pricing while maintaining quality and GST compliance.</span></div>
       </div>
-      <table class="data-table">
-        <thead><tr><th>Item</th><th>Description</th><th>UOM</th><th>Qty</th><th>Category</th><th>Delivery Location</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
     </div>
   </div>
   <p>Does this look correct?</p>`;
 }
 
+function metadataCard() {
+  return requirementSummaryCard();
+}
+
 function eventDetailsCard() {
-  const items = getLineItems();
   const totalQty = getTotalQty();
   const questions = getRfqQuestions().map((q, i) => `
     <div class="rfq-question">
-      <div class="q-num">Q${i + 1}</div>
+      <div class="q-num">${i + 1}</div>
       <div class="q-text">${q}</div>
     </div>`).join('');
 
-  return `<p>Great! Let me set up the event details and RFQ questions for your <strong>${getEventCategory()}</strong> requirement.</p>
+  return `<p>Because this is an <strong>Office Furniture</strong> requirement, I recommend making the following supplier questions mandatory. Furniture can involve delivery damage, installation, warranty and specification gaps, so these details should be standardized across supplier responses.</p>
   <div class="card">
     <div class="card-header">📝 Event Details</div>
     <div class="card-body">
       <div class="card-meta">
         <div class="meta-item meta-item-wide"><label>Event Name</label><input type="text" value="${esc(S.eventName)}" id="eventNameInput" class="event-name-input"></div>
-        <div class="meta-item"><label>Category</label><span>${getEventCategory()}</span></div>
-        <div class="meta-item"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
-        <div class="meta-item"><label>Quantity</label><span>${totalQty} chairs</span></div>
-        <div class="meta-item"><label>Delivery</label><span>${getLocationsLabel()}</span></div>
+        <div class="meta-item"><label>Category</label><span>${getEventCategory()} → ${EVENT_SUBCATEGORY}</span></div>
+        <div class="meta-item"><label>Items</label><span>${EVENT_SUB_ITEMS.join(', ')}</span></div>
+        <div class="meta-item"><label>Quantity</label><span>${totalQty} units</span></div>
+        <div class="meta-item"><label>Delivery</label><span>${getLocationsLabel()} campus</span></div>
       </div>
-      <h4 style="font-size:13px;font-weight:600;margin:16px 0 8px;">RFQ Questions</h4>
+      <h4 style="font-size:13px;font-weight:600;margin:16px 0 8px;">6 mandatory questions recommended by Aria</h4>
       ${questions}
     </div>
   </div>
@@ -581,9 +591,9 @@ function rfqPreviewCard() {
     <tr><td>${i + 1}</td><td>${li.item}</td><td>${li.desc}</td><td>${li.uom}</td><td>${li.qty}</td><td>${li.location}</td></tr>`).join('');
 
   const qRows = getRfqQuestions().map((q, i) => `
-    <div class="rfq-question"><div class="q-num">Q${i + 1}</div><div class="q-text">${q}</div></div>`).join('');
+    <div class="rfq-question"><div class="q-num">${i + 1}</div><div class="q-text">${q}</div></div>`).join('');
 
-  return `<p>Here's your RFQ document preview for <strong>${totalQty} ergonomic office chairs</strong>:</p>
+  return `<p>Here's your RFQ document preview for <strong>${totalQty} height-adjustable office desks with monitor arms</strong>:</p>
   <div class="rfq-doc">
     <div class="rfq-header">
       <h2>${S.eventName}</h2>
@@ -595,11 +605,11 @@ function rfqPreviewCard() {
         <div class="rfq-grid">
           <div class="rfq-field"><label>Event Name</label><span>${S.eventName}</span></div>
           <div class="rfq-field"><label>Category</label><span>${getEventCategory()}</span></div>
-          <div class="rfq-field"><label>Item</label><span>${EVENT_ITEM_NAME}</span></div>
+          <div class="rfq-field"><label>Item</label><span>${EVENT_ITEM_NAME} + Monitor arms</span></div>
           <div class="rfq-field"><label>Currency</label><span>INR (₹)</span></div>
-          <div class="rfq-field"><label>Delivery Locations</label><span>${getLocationsLabel()}</span></div>
+          <div class="rfq-field"><label>Delivery Locations</label><span>${getLocationsLabel()} campus</span></div>
           <div class="rfq-field"><label>Total Items</label><span>${items.length} line item${items.length > 1 ? 's' : ''}</span></div>
-          <div class="rfq-field"><label>Total Quantity</label><span>${totalQty} chairs</span></div>
+          <div class="rfq-field"><label>Total Quantity</label><span>${totalQty} units</span></div>
         </div>
       </div>
       <div class="rfq-section">
@@ -610,7 +620,7 @@ function rfqPreviewCard() {
         </table>
       </div>
       <div class="rfq-section">
-        <h3>RFQ Questions</h3>
+        <h3>6 mandatory questions recommended by Aria</h3>
         ${qRows}
       </div>
     </div>
@@ -640,7 +650,7 @@ function uploadCard() {
       ${done ? `<div class="upload-file-list" id="uploadFileList">${fileList}</div>` : ''}
     </div>
   </div>
-  <p>${done ? 'Click "Done uploading" when finished, or add more files.' : 'Attach your files, then click "Done uploading" when ready.'}</p>`;
+  ${done ? '' : '<p>Attach your files and I\'ll incorporate them automatically.</p>'}`;
 }
 
 function formatFileSize(bytes) {
@@ -692,7 +702,7 @@ function benchmarkCard() {
   const targetPct = ((S.targetPrice - BENCHMARK_MIN) / (BENCHMARK_MAX - BENCHMARK_MIN)) * 100;
   const maxPct = 100;
 
-  return `<p>Here are the price benchmarks for <strong>ergonomic office chairs</strong> — internal PO history and live external market data for mesh executive seating.</p>
+  return `<p>Here are the price benchmarks for <strong>height-adjustable office desks</strong> — internal PO history and live external market data for workstation furniture.</p>
   <div class="card">
     <div class="card-header bench-card-header">
       <span>📊 PRICE BENCHMARKING — ${getEventCategory()}</span>
@@ -725,62 +735,94 @@ function benchmarkCard() {
           <div class="bench-scale-dot max" style="left:${maxPct}%"></div>
         </div>
         <div class="bench-target-text">
-          Based on <strong>5 internal chair POs</strong> and <strong>4 market references</strong> for ergonomic mesh chairs, I recommend a target benchmark of <strong>${formatPrice(S.targetPrice)}/chair</strong> — this gives you room to negotiate while remaining competitive. This target will be used to analyse supplier responses during bid monitoring.
+          Based on <strong>5 internal desk POs</strong> and <strong>4 market references</strong> for height-adjustable office desks, I recommend a target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong> — this gives you room to negotiate while remaining competitive. This target will be used to analyse supplier responses during bid monitoring.
         </div>
       </div>
     </div>
   </div>
-  <p>Based on this, I recommend a target of <strong>${formatPrice(S.targetPrice)}/chair</strong> for ${getTotalQty()} ergonomic office chairs. Say "proceed" when you are ready to move to supplier discovery.</p>`;
+  <p>Based on this, I recommend a target of <strong>${formatPrice(S.targetPrice)}/unit</strong> for ${getTotalQty()} height-adjustable office desks. Say "proceed" when you are ready to move to supplier discovery.</p>`;
 }
 
-function supplierTableRow(s) {
-  const rec = s.recommended ? ' recommended-row' : '';
-  const badges = s.recommended ? ' <span class="tag recommended">★ Aria Recommends</span>' : '';
-  const srcTag = s.source === 'Internal'
-    ? '<span class="tag internal">Internal</span>'
-    : '<span class="tag ai">AI Discovered</span>';
-  return `<tr class="${rec}">
-    <td><strong>${s.id}</strong></td>
-    <td><div class="sup-name">${s.name}${badges}</div></td>
-    <td>${srcTag}</td>
-    <td>${s.onTime}%</td>
-    <td>${s.pastPOs || '—'}</td>
-    <td><div class="sup-rationale">💡 ${s.rationale}</div></td>
-    <td><div class="sup-contact">👤 ${s.contact}<br>✉️ ${s.email}</div></td>
-    <td><strong style="color:var(--primary)">${s.score}</strong>/100</td>
-  </tr>`;
-}
-
-function supplierCard() {
-  const internal = SUPPLIER_DATA.filter(s => s.source === 'Internal');
-  const ai = SUPPLIER_DATA.filter(s => s.source === 'AI Discovered');
-  const locLabel = getLocationsLabel();
-  const totalQty = getTotalQty();
-
-  return `<p>I've identified <strong>7 furniture suppliers</strong> for your <strong>${totalQty} ergonomic office chairs</strong> in ${esc(locLabel)}. Say "add 1, 2, 3" or "add all" to invite them:</p>
-  <div class="card">
-    <div class="card-header bench-card-header">
-      <span>🏢 SUPPLIER DISCOVERY</span>
-      <span class="bench-badge">7 suppliers found</span>
+function supplierCardRow(s, isExternal) {
+  const srcTag = isExternal
+    ? '<span class="tag ai">AI-discovered / External Supplier</span>'
+    : '<span class="tag internal">Existing / Incumbent</span>';
+  return `<div class="supplier-row recommended">
+    <div class="supplier-info">
+      <div class="supplier-name">${s.name} ${srcTag}</div>
+      <div class="supplier-meta">${s.categoryRelevance}</div>
+      <div class="supplier-meta">Historical performance: <strong>${s.onTime}%</strong> on-time · ${s.pastPOs || 0} past POs</div>
+      <div class="supplier-meta">EcoVadis: ${s.ecoVadis} · D&amp;B: ${s.dnB}</div>
+      ${s.priceSignal ? `<div class="supplier-meta">${s.priceSignal}</div>` : ''}
+      <div class="supplier-rationale">💡 ${s.rationale}</div>
     </div>
+    <div class="supplier-score">
+      <div class="score-value">${s.score}</div>
+      <div class="score-label">Score</div>
+    </div>
+  </div>`;
+}
+
+function incumbentSuppliersCard() {
+  const qualified = SUPPLIER_DATA.filter(s => QUALIFIED_INCUMBENT_IDS.includes(s.id));
+  const cards = qualified.map(s => supplierCardRow(s, false)).join('');
+
+  return `<p>I found <strong>4 incumbent suppliers</strong> in your existing supplier base for this category.</p>
+  <p>Based on their historical pricing, delivery performance and category experience, <strong>2 of them look good to go</strong> for this RFQ.</p>
+  <div class="card">
+    <div class="card-header">2 qualified incumbent suppliers</div>
     <div class="card-body">
-      <div class="section-divider">📁 Internal Database Vendors (1–4)</div>
-      <div class="supplier-table-wrap">
-        <table class="supplier-table">
-          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
-          <tbody>${internal.map(supplierTableRow).join('')}</tbody>
-        </table>
+      <div class="supplier-list">${cards}</div>
+    </div>
+  </div>`;
+}
+
+function externalSearchRecommendationCard() {
+  return `<p>I'd also recommend looking beyond your incumbent suppliers.</p>
+  <p>Although 2 incumbent suppliers have strong historical performance, expanding the supplier pool could increase price competition and give you additional options on lead time and commercial terms.</p>
+  <p>Would you like me to search for external suppliers as well?</p>`;
+}
+
+function externalSuppliersCard() {
+  const external = SUPPLIER_DATA.filter(s => EXTERNAL_SUPPLIER_IDS.includes(s.id));
+  const cards = external.map(s => supplierCardRow(s, true)).join('');
+
+  return `<p>I found <strong>2 additional suppliers</strong> that match the category and delivery requirements.</p>
+  <p>I've combined them with the 2 qualified incumbent suppliers so you can review the complete recommended supplier panel.</p>
+  <div class="card">
+    <div class="card-header">External suppliers found</div>
+    <div class="card-body">
+      <div class="supplier-list">${cards}</div>
+    </div>
+  </div>`;
+}
+
+function combinedSupplierPanelCard() {
+  const internal = SUPPLIER_DATA.filter(s => QUALIFIED_INCUMBENT_IDS.includes(s.id));
+  const external = SUPPLIER_DATA.filter(s => EXTERNAL_SUPPLIER_IDS.includes(s.id));
+  const internalList = internal.map(s => `<li>${s.name}</li>`).join('');
+  const externalList = external.map(s => `<li>${s.name}</li>`).join('');
+
+  return `<div class="card">
+    <div class="card-header">Recommended Supplier Panel</div>
+    <div class="card-body">
+      <div class="panel-section">
+        <h4>2 Existing Suppliers</h4>
+        <ul class="panel-supplier-list">${internalList}</ul>
       </div>
-      <div class="section-divider">🤖 AI Recommended — New Suppliers (5–7)</div>
-      <div class="supplier-table-wrap">
-        <table class="supplier-table">
-          <thead><tr><th>#</th><th>Supplier</th><th>Source</th><th>On-time</th><th>Past POs</th><th>Rationale</th><th>Contact</th><th>Score</th></tr></thead>
-          <tbody>${ai.map(supplierTableRow).join('')}</tbody>
-        </table>
+      <div class="panel-section">
+        <h4>2 External Suppliers</h4>
+        <ul class="panel-supplier-list">${externalList}</ul>
       </div>
     </div>
   </div>
-  <p>Which suppliers would you like to invite? Reference by number (e.g. "add 1, 2, 5") or say "add all".</p>`;
+  <p>I recommend inviting all 4 suppliers to the RFQ — 2 proven incumbents and 2 qualified external suppliers.</p>
+  <p>This gives us a balance of historical supplier performance and new market competition.</p>
+  <p>Would you like me to add these 4 suppliers to the RFQ?</p>`;
+}
+
+function supplierCard() {
+  return combinedSupplierPanelCard();
 }
 
 function deadlineCard() {
@@ -802,7 +844,7 @@ function deadlineCard() {
 }
 
 function publishCard() {
-  const count = S.selectedNums.length || 7;
+  const count = S.selectedNums.length || 4;
   return `<p>Your RFQ is now live!</p>
   <div class="card">
     <div class="card-body">
@@ -833,7 +875,7 @@ function getBidRows() {
   return [1, 2, 3, 4].map(id => {
     const sup = SUPPLIER_DATA.find(s => s.id === id);
     const bid = BID_RESPONSES[id];
-    return { id, name: sup.name, rec: sup.recommended, ...bid };
+    return { id, name: sup.name, rec: id === 1, ...bid };
   });
 }
 
@@ -854,7 +896,7 @@ function buildBidKeyInsights(bids, lowest, qty, savingsStr, savingsPct) {
     `<strong>Price leader:</strong> ${lowest.name} at ${formatPrice(lowest.up)}/unit — lowest of 4 responses and ${formatPrice(S.targetPrice - lowest.up)}/unit below your ${formatPrice(S.targetPrice)} target`,
     `<strong>Competitive spread:</strong> All bids fall within ${formatPrice(spread)}/unit (${spreadPct}%) — ${belowTarget} of 4 suppliers bid below target, giving you room to negotiate`,
     `<strong>Delivery:</strong> ${fastest.name} offers the fastest delivery at ${fastest.del}; longest quoted lead time is ${slowest.del}`,
-    `<strong>Requirement fit:</strong> ${topScore.name} leads on match score (${topScore.score}/100); estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) if you award to ${lowest.name} for ${qty} chairs`,
+    `<strong>Requirement fit:</strong> ${topScore.name} leads on match score (${topScore.score}/100); estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) if you award to ${lowest.name} for ${qty} units`,
   ]);
 }
 
@@ -891,7 +933,7 @@ function monitorCard() {
       <div class="insight-chip">Target Benchmark: <span class="chip-value">${formatPrice(S.targetPrice)}/unit · ${formatLakhs(targetTotal)} total</span></div>
       <div class="insight-chip">Lowest Bid: <span class="chip-value">${lowest.name} · ${formatPrice(lowest.up)}/unit</span></div>
       <div class="insight-chip">Est. Savings: <span class="chip-value">${savingsStr} (${savingsPct}% vs target)</span></div>
-      <div class="insight-chip">Responses: <span class="chip-value">4 of ${S.selectedNums.length || 7}</span></div>
+      <div class="insight-chip">Responses: <span class="chip-value">4 of ${S.selectedNums.length || 4}</span></div>
     </div>`;
 
   const keyInsights = `
@@ -911,9 +953,9 @@ function monitorCard() {
         </div>`).join('')}
     </div>`;
 
-  const featherBars = [{ l: 'Price', v: 95 }, { l: 'Delivery', v: 90 }, { l: 'Warranty', v: 92 }, { l: 'Hist. Perf', v: 96 }, { l: 'Ergonomics', v: 94 }];
-  const godrejBars = [{ l: 'Price', v: 88 }, { l: 'Delivery', v: 86 }, { l: 'Warranty', v: 90 }, { l: 'Hist. Perf', v: 90 }, { l: 'Ergonomics', v: 91 }];
-  const durianBars = [{ l: 'Price', v: 82 }, { l: 'Delivery', v: 80 }, { l: 'Warranty', v: 84 }, { l: 'Hist. Perf', v: 85 }, { l: 'Ergonomics', v: 86 }];
+  const featherBars = [{ l: 'Price', v: 95 }, { l: 'Delivery', v: 90 }, { l: 'Warranty', v: 92 }, { l: 'Hist. Perf', v: 96 }, { l: 'Specs Match', v: 94 }];
+  const godrejBars = [{ l: 'Price', v: 88 }, { l: 'Delivery', v: 86 }, { l: 'Warranty', v: 90 }, { l: 'Hist. Perf', v: 90 }, { l: 'Specs Match', v: 91 }];
+  const durianBars = [{ l: 'Price', v: 82 }, { l: 'Delivery', v: 80 }, { l: 'Warranty', v: 84 }, { l: 'Hist. Perf', v: 85 }, { l: 'Specs Match', v: 86 }];
 
   return `<p>4 supplier responses analysed against your target benchmark of <strong>${formatPrice(S.targetPrice)}/unit</strong>:</p>
   ${insights}
@@ -931,7 +973,7 @@ function monitorCard() {
         ${scorecard('Durian Industries', durianBars)}
       </div>
       <div class="rec-banner">
-        <strong>Recommendation: Award to ${lowest.name}</strong> — ${lowest.name} bids <strong>${formatPrice(lowest.up)}/unit</strong> (${formatLakhs(lowest.total)} total), which is <strong>${formatPrice(S.targetPrice - lowest.up)}/unit below</strong> your ${formatPrice(S.targetPrice)} target. Estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) against the target benchmark of ${formatLakhs(targetTotal)} for ${qty} chairs.
+        <strong>Recommendation: Award to ${lowest.name}</strong> — ${lowest.name} bids <strong>${formatPrice(lowest.up)}/unit</strong> (${formatLakhs(lowest.total)} total), which is <strong>${formatPrice(S.targetPrice - lowest.up)}/unit below</strong> your ${formatPrice(S.targetPrice)} target. Estimated savings of <strong>${savingsStr}</strong> (${savingsPct}%) against the target benchmark of ${formatLakhs(targetTotal)} for ${qty} units.
       </div>
     </div>
   </div>
@@ -941,7 +983,7 @@ function monitorCard() {
 function scheduleResponsesNotification() {
   if (responsesTimer) clearTimeout(responsesTimer);
   responsesTimer = setTimeout(() => {
-    if (S.step !== 9 || S.responsesNotified) return;
+    if (S.step !== 13 || S.responsesNotified) return;
     S.responsesNotified = true;
     S.awaitingAnalysisConsent = true;
     saveState();
@@ -977,7 +1019,7 @@ function runAnalysisStream(onDone) {
         wrap.remove();
         S.analysisComplete = true;
         S.awaitingAnalysisConsent = false;
-        S.step = 10;
+        S.step = 14;
         saveState();
         updateUI();
         onDone();
@@ -1043,12 +1085,12 @@ function dynamicCompareCard(id1, id2) {
 
   const rows = [
     { c: 'Unit Price', v1: formatPrice(b1.up), v2: formatPrice(b2.up), edge: edge(b1.up, b2.up, false) },
-    { c: `Total Value (${qty} chairs)`, v1: formatLakhs(b1.up * qty), v2: formatLakhs(b2.up * qty), edge: edge(b1.up, b2.up, false) },
+    { c: `Total Value (${qty} units)`, v1: formatLakhs(b1.up * qty), v2: formatLakhs(b2.up * qty), edge: edge(b1.up, b2.up, false) },
     { c: 'Model', v1: b1.model, v2: b2.model, edge: '—' },
     { c: 'Delivery', v1: b1.del, v2: b2.del, edge: edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false) },
     { c: 'Warranty', v1: b1.war, v2: b2.war, edge: b1.war === b2.war ? 'Tie' : '—' },
-    { c: 'Lumbar Support', v1: b1.lumbar, v2: b2.lumbar, edge: '—' },
-    { c: 'Armrests', v1: b1.armrests, v2: b2.armrests, edge: '—' },
+    { c: 'Desk Specs', v1: b1.specs, v2: b2.specs, edge: '—' },
+    { c: 'Monitor Arm', v1: b1.monitorArm, v2: b2.monitorArm, edge: '—' },
     { c: 'Payment Terms', v1: b1.pay, v2: b2.pay, edge: '—' },
     { c: 'AMC/yr', v1: b1.amc, v2: b2.amc, edge: edge(parseInt(b1.amc.replace(/\D/g, ''), 10), parseInt(b2.amc.replace(/\D/g, ''), 10), false) },
     { c: 'Match Score', v1: `${b1.score}/100`, v2: `${b2.score}/100`, edge: edge(b1.score, b2.score, true) },
@@ -1069,7 +1111,7 @@ function dynamicCompareCard(id1, id2) {
   const verdictOtherName = verdictName === cheaper.name ? other.name : cheaper.name;
 
   const rationale = [
-    `<strong>Price:</strong> ${cheaper.name} bids ${formatPrice(diff)}/unit lower — ${formatLakhs(diffTotal)} less on ${qty} chairs`,
+    `<strong>Price:</strong> ${cheaper.name} bids ${formatPrice(diff)}/unit lower — ${formatLakhs(diffTotal)} less on ${qty} units`,
     `<strong>Delivery:</strong> ${edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false) === 'Tie' ? 'Both quote similar lead times' : `${edge(parseInt(b1.del, 10), parseInt(b2.del, 10), false)} offers faster delivery`} (${b1.del} vs ${b2.del})`,
     `<strong>Commercial terms:</strong> ${b1.war === b2.war ? 'Warranty is comparable' : 'Warranty terms differ'}; AMC is ${b1.amc} (${n1}) vs ${b2.amc} (${n2})`,
     `<strong>Overall:</strong> ${verdictName} wins on ${wins[verdictName]} of ${rows.filter(r => r.edge !== '—' && r.edge !== 'Tie').length} scored criteria with a ${verdictBid.score}/100 requirement match${verdictName === cheaper.name ? ` and the lowest unit price` : `, despite ${cheaper.name} being ${formatPrice(diff)}/unit cheaper`}`,
@@ -1124,10 +1166,14 @@ async function handleInput(text) {
     case 5: return handleStep5(intent);
     case 6: return handleStep6(intent);
     case 7: return handleStep7(intent);
-    case 8: return handleStep8(intent, text);
+    case 8: return handleStep8(intent);
     case 9: return handleStep9(intent);
-    case 10: return handleStep10(intent, text);
+    case 10: return handleStep10(intent);
     case 11: return handleStep11(intent);
+    case 12: return handleStep12(intent, text);
+    case 13: return handleStep13(intent);
+    case 14: return handleStep14(intent, text);
+    case 15: return handleStep15(intent);
   }
 }
 
@@ -1136,28 +1182,47 @@ async function handleStep0(intent, text) {
 }
 
 async function handleStep1(intent) {
-  if (intent.type === 'confirm' || intent.type === 'unknown') {
+  if (intent.type === 'addChairs') {
+    S.includeChairs = true;
     S.step = 2;
+    saveState();
+    updateUI();
+    await ariaSay(`<p>Got it — I've added ergonomic chairs to your requirement scope.</p>`);
+    await ariaSay(requirementSummaryCard());
+    return;
+  }
+  if (intent.type === 'proceedDesks' || intent.type === 'confirm' || intent.type === 'unknown') {
+    S.includeChairs = false;
+    S.step = 2;
+    saveState();
+    updateUI();
+    await ariaSay(requirementSummaryCard());
+  }
+}
+
+async function handleStep2(intent) {
+  if (intent.type === 'confirm' || intent.type === 'unknown') {
+    S.step = 3;
     saveState();
     updateUI();
     await ariaSay(eventDetailsCard());
   }
 }
 
-async function handleStep2(intent) {
+async function handleStep3(intent) {
   const input = document.getElementById('eventNameInput');
   if (input) S.eventName = input.value;
   if (intent.type === 'confirm' || intent.type === 'unknown') {
-    S.step = 3;
+    S.step = 4;
     saveState();
     updateUI();
     await ariaSay(rfqPreviewCard());
   }
 }
 
-async function handleStep3(intent) {
+async function handleStep4(intent) {
   if (intent.type === 'upload' || intent.type === 'confirm') {
-    S.step = 4;
+    S.step = 5;
     saveState();
     updateUI();
     await ariaSay(uploadCard());
@@ -1168,63 +1233,90 @@ async function handleStep3(intent) {
   }
 }
 
-async function handleStep4(intent) {
+async function handleStep5(intent) {
   if (intent.type === 'upload') {
     document.getElementById('fileInput').click();
     return;
   }
-  if ((intent.type === 'confirm' || intent.type === 'unknown') && S.uploadedFiles.length > 0) {
-    S.uploadDone = true;
-    saveState();
+  if (intent.type === 'skip' || intent.type === 'benchmark') {
+    S.uploadDone = false;
+    S.uploadedFiles = [];
     await showRfqCreated();
-  } else if (intent.type === 'confirm' || intent.type === 'unknown') {
-    await ariaSay(`No files attached yet. Click the upload area to browse, then click "Done uploading".`);
   }
 }
 
-async function handleStep5(intent) {
+async function handleStep6(intent) {
   if (intent.type === 'confirm' || intent.type === 'benchmark' || intent.type === 'unknown') {
-    S.step = 6;
+    S.step = 7;
     saveState();
     updateUI();
     await ariaSay(benchmarkCard());
   }
 }
 
-async function handleStep6(intent) {
-  if (intent.type === 'confirm' || intent.type === 'suppliers' || intent.type === 'unknown') {
-    S.step = 7;
-    saveState();
-    updateUI();
-    await ariaSay(supplierCard());
-  }
-}
-
 async function handleStep7(intent) {
-  if (intent.type === 'addAll') {
-    S.selectedNums = SUPPLIER_DATA.map(s => s.id);
-  } else if (intent.type === 'numbered') {
-    S.selectedNums = intent.nums;
-  } else if (intent.type === 'named') {
-    S.selectedNums = [...new Set([...S.selectedNums, intent.id])];
-  } else if (intent.type === 'confirm' || intent.type === 'publish') {
-    S.selectedNums = S.selectedNums.length ? S.selectedNums : [1, 2, 3];
-  }
-
-  if (S.selectedNums.length > 0 || intent.type === 'confirm' || intent.type === 'publish') {
-    if (!S.selectedNums.length) S.selectedNums = [1, 2, 3];
-    const names = S.selectedNums.map(n => SUPPLIER_DATA.find(s => s.id === n)?.name).filter(Boolean);
+  if (intent.type === 'confirm' || intent.type === 'suppliers' || intent.type === 'unknown') {
     S.step = 8;
     saveState();
     updateUI();
-    await ariaSay(`Got it — I'll invite <strong>${names.join(', ')}</strong> (${S.selectedNums.length} supplier${S.selectedNums.length > 1 ? 's' : ''}).`);
-    await ariaSay(deadlineCard());
-  } else {
-    await ariaSay(`Please specify which suppliers to invite. Say "add 1, 2, 3" or "add all".`);
+    await ariaSay(incumbentSuppliersCard());
+    await ariaSay(externalSearchRecommendationCard());
+    S.step = 9;
+    saveState();
+    updateUI();
   }
 }
 
 async function handleStep8(intent) {
+  // Transitional — auto-advances to step 9
+}
+
+async function handleStep9(intent) {
+  if (intent.type === 'searchExternal' || intent.type === 'confirm' || intent.type === 'unknown') {
+    S.externalSearchDone = true;
+    S.step = 10;
+    saveState();
+    updateUI();
+    await ariaSay(externalSuppliersCard());
+    await ariaSay(combinedSupplierPanelCard());
+    S.step = 11;
+    saveState();
+    updateUI();
+    return;
+  }
+  if (intent.type === 'proceedIncumbent') {
+    S.selectedNums = [...QUALIFIED_INCUMBENT_IDS];
+    S.step = 12;
+    saveState();
+    updateUI();
+    const names = S.selectedNums.map(n => SUPPLIER_DATA.find(s => s.id === n)?.name).filter(Boolean);
+    await ariaSay(`Understood — I'll proceed with <strong>${names.join(' and ')}</strong> as your supplier panel.`);
+    await ariaSay(deadlineCard());
+  }
+}
+
+async function handleStep10(intent) {
+  // Transitional — auto-advances to step 11
+}
+
+async function handleStep11(intent) {
+  if (intent.type === 'addAll' || intent.type === 'confirm' || intent.type === 'publish') {
+    S.selectedNums = [...RECOMMENDED_SUPPLIER_IDS];
+    S.suppliersAdded = true;
+    const names = S.selectedNums.map(n => SUPPLIER_DATA.find(s => s.id === n)?.name).filter(Boolean);
+    S.step = 12;
+    saveState();
+    updateUI();
+    await ariaSay(`Done — I've added <strong>${names.join(', ')}</strong> to the RFQ.`);
+    await ariaSay(deadlineCard());
+    return;
+  }
+  if (intent.type === 'reviewSuppliers') {
+    await ariaSay(combinedSupplierPanelCard());
+  }
+}
+
+async function handleStep12(intent, text) {
   if (intent.type === 'deadline') {
     S.deadlineDate = intent.date;
     S.deadlineTime = intent.time || DEADLINE_DEFAULT.time;
@@ -1233,7 +1325,7 @@ async function handleStep8(intent) {
     return;
   }
   if (intent.type === 'confirm' || intent.type === 'unknown' || intent.type === 'publish') {
-    S.step = 9;
+    S.step = 13;
     S.rfqPublished = true;
     saveState();
     updateUI();
@@ -1253,7 +1345,7 @@ function triggerResponsesNotification() {
 
 async function startBidAnalysis() {
   if (S.analysisComplete) {
-    S.step = 10;
+    S.step = 14;
     saveState();
     updateUI();
     await ariaSay(monitorCard());
@@ -1264,9 +1356,9 @@ async function startBidAnalysis() {
   });
 }
 
-async function handleStep9(intent) {
+async function handleStep13(intent) {
   if (intent.type === 'remind') {
-    await ariaSay(`Reminder emails sent to 3 suppliers who haven't responded yet. I'll notify you when they submit their bids.`);
+    await ariaSay(`Reminder emails sent to suppliers who haven't responded yet. I'll notify you when they submit their bids.`);
     return;
   }
   if (intent.type === 'extend') {
@@ -1285,16 +1377,16 @@ async function handleStep9(intent) {
     return;
   }
   if (S.analysisComplete) {
-    S.step = 10;
+    S.step = 14;
     saveState();
     updateUI();
     await ariaSay(monitorCard());
   }
 }
 
-async function handleStep10(intent, text) {
+async function handleStep14(intent, text) {
   if (intent.type === 'award' || (intent.type === 'confirm' && !extractCompareSuppliers(text))) {
-    S.step = 11;
+    S.step = 15;
     S.awardDone = true;
     saveState();
     updateUI();
@@ -1310,7 +1402,7 @@ async function handleStep10(intent, text) {
   }
 }
 
-async function handleStep11(intent) {
+async function handleStep15(intent) {
   await ariaSay(`The award has been completed. PO-2026-112 is being processed. Is there anything else I can help with?`);
 }
 
@@ -1330,6 +1422,17 @@ function handleFiles(fileList) {
   S.uploadDone = S.uploadedFiles.length > 0;
   saveState();
   refreshUploadCard();
+
+  if (S.uploadDone && S.step === 5) {
+    autoProgressAfterUpload();
+  }
+}
+
+async function autoProgressAfterUpload() {
+  await ariaSay(`<p>Attachment received. I've incorporated the relevant information and am moving to the next step.</p>`);
+  S.uploadDone = true;
+  saveState();
+  await showRfqCreated();
 }
 
 function refreshUploadCard() {
@@ -1405,7 +1508,7 @@ function render() {
   updateUI();
   scrollBottom();
   bindMessageEvents();
-  if (S.step === 9 && S.rfqPublished && !S.responsesNotified) {
+  if (S.step === 13 && S.rfqPublished && !S.responsesNotified) {
     scheduleResponsesNotification();
   }
 }
@@ -1435,67 +1538,84 @@ async function jumpToStep(target) {
   S = defaultState();
   S.step = target;
   S.chatStarted = true;
-  S.userPrompt = 'We need 120 ergonomic office chairs for our new office in Bangalore. Chairs should have adjustable lumbar support, 3D armrests, breathable mesh back, adjustable seat height, and a minimum 3-year warranty.';
-  S.eventName = 'Office Chairs Sourcing — Bangalore — Aug 2026';
+  S.userPrompt = 'We need 50 ergonomic office desks for our main office in Bangalore.\nItems include height-adjustable desks and monitor arms.\nDelivery and assembly at our Bangalore campus are required.\nBudget-conscious but quality-focused — need GST-compliant quotes.';
+  S.eventName = 'Office Desks Sourcing — Bangalore — Aug 2026';
   S.eventCategory = EVENT_CATEGORY;
   S.lineItems = LINE_ITEMS;
   S.locations = ['Bangalore'];
-  S.uploadedFiles = [{ name: 'Ergonomic_Chair_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' }];
+  S.uploadedFiles = [{ name: 'Desk_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' }];
 
   if (target >= 1) {
     S.messages.push({ role: 'user', html: S.userPrompt, t: now() });
-    S.messages.push({ role: 'aria', html: `<p>Thanks! I've parsed your requirement for <strong>Bangalore</strong>. Here's what I understood:</p>${metadataCard()}`, t: now() });
+    S.messages.push({ role: 'aria', html: categoryIntelligenceCard(), t: now() });
   }
   if (target >= 2) {
+    S.messages.push({ role: 'user', html: 'Proceed with desks only', t: now() });
+    S.messages.push({ role: 'aria', html: requirementSummaryCard(), t: now() });
+  }
+  if (target >= 3) {
     S.messages.push({ role: 'user', html: 'Yes, looks good', t: now() });
     S.messages.push({ role: 'aria', html: eventDetailsCard(), t: now() });
   }
-  if (target >= 3) {
+  if (target >= 4) {
     S.messages.push({ role: 'user', html: 'Yes, proceed', t: now() });
     S.messages.push({ role: 'aria', html: rfqPreviewCard(), t: now() });
   }
-  if (target >= 4) {
+  if (target >= 5) {
     S.uploadDone = true;
     S.uploadedFiles = [
-      { name: 'Ergonomic_Chair_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' },
+      { name: 'Desk_Spec_Sheet.pdf', size: 2457600, type: 'application/pdf' },
       { name: 'Vendor_Evaluation_Criteria.pdf', size: 1100000, type: 'application/pdf' },
     ];
     S.messages.push({ role: 'user', html: 'Upload attachments', t: now() });
     S.messages.push({ role: 'aria', html: uploadCard(), t: now() });
   }
-  if (target >= 5) {
+  if (target >= 6) {
     S.rfqCreated = true;
     S.uploadDone = true;
-    S.messages.push({ role: 'user', html: 'Done uploading', t: now() });
+    S.messages.push({ role: 'user', html: 'Upload attachments', t: now() });
+    S.messages.push({ role: 'aria', html: `<p>Attachment received. I've incorporated the relevant information and am moving to the next step.</p>`, t: now() });
     S.messages.push({ role: 'aria', html: rfqCreatedCard(), t: now() });
   }
-  if (target >= 6) {
+  if (target >= 7) {
     S.messages.push({ role: 'user', html: 'Proceed to benchmarks', t: now() });
     S.messages.push({ role: 'aria', html: benchmarkCard(), t: now() });
   }
-  if (target >= 7) {
-    S.messages.push({ role: 'user', html: 'Show suppliers', t: now() });
-    S.messages.push({ role: 'aria', html: supplierCard(), t: now() });
-  }
   if (target >= 8) {
-    S.selectedNums = [1, 2, 3];
-    S.messages.push({ role: 'user', html: 'Add 1, 2, 3', t: now() });
-    S.messages.push({ role: 'aria', html: `Got it — I'll invite <strong>Featherlite Ergo, Godrej Interio, Durian Industries</strong> (3 suppliers).`, t: now() });
-    S.messages.push({ role: 'aria', html: deadlineCard(), t: now() });
+    S.messages.push({ role: 'user', html: 'Show suppliers', t: now() });
+    S.messages.push({ role: 'aria', html: incumbentSuppliersCard(), t: now() });
+    S.messages.push({ role: 'aria', html: externalSearchRecommendationCard(), t: now() });
   }
   if (target >= 9) {
-    S.rfqPublished = true;
+    S.messages.push({ role: 'user', html: 'Yes, search external suppliers', t: now() });
+    S.messages.push({ role: 'aria', html: externalSuppliersCard(), t: now() });
+  }
+  if (target >= 10) {
+    S.messages.push({ role: 'aria', html: combinedSupplierPanelCard(), t: now() });
+  }
+  if (target >= 11) {
+    S.selectedNums = [...RECOMMENDED_SUPPLIER_IDS];
+    S.suppliersAdded = true;
+    S.externalSearchDone = true;
+    S.messages.push({ role: 'user', html: 'Add all 4 suppliers', t: now() });
+    S.messages.push({ role: 'aria', html: `Got it — I'll invite <strong>Featherlite Ergo, Godrej Interio, Spacewood Solutions, Wipro Furniture</strong> (4 suppliers).`, t: now() });
+    S.messages.push({ role: 'aria', html: deadlineCard(), t: now() });
+  }
+  if (target >= 12) {
     S.messages.push({ role: 'user', html: 'Yes, 21 Aug works', t: now() });
     S.messages.push({ role: 'aria', html: publishCard(), t: now() });
   }
-  if (target >= 10) {
+  if (target >= 13) {
+    S.rfqPublished = true;
+  }
+  if (target >= 14) {
     S.responsesNotified = true;
     S.analysisComplete = true;
     S.messages.push({ role: 'aria', html: RESPONSES_MSG, t: now() });
     S.messages.push({ role: 'user', html: 'yes', t: now() });
     S.messages.push({ role: 'aria', html: monitorCard(), t: now() });
   }
-  if (target >= 11) {
+  if (target >= 15) {
     S.awardDone = true;
     S.messages.push({ role: 'user', html: 'Proceed to award', t: now() });
     S.messages.push({ role: 'aria', html: awardBanner(), t: now() });
@@ -1546,14 +1666,6 @@ document.addEventListener('DOMContentLoaded', () => {
     hint.classList.remove('error');
     startChat(prompt);
   }
-
-  document.querySelectorAll('.landing-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const text = chip.dataset.prompt.replace(/\\n/g, '\n');
-      document.getElementById('landingPrompt').value = text;
-      document.getElementById('landingHint').classList.remove('error');
-    });
-  });
 
   initDemoNav();
   render();
