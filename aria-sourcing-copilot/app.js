@@ -366,11 +366,11 @@ async function startChat(prompt) {
 function nlp(text) {
   const t = text.toLowerCase().trim();
 
-  if (/\b(yes|looks good|correct|sounds good|proceed|go ahead|sure|okay|ok|confirm|yep|great|perfect|done|approved)\b/.test(t))
-    return { type: 'confirm' };
+  if (/\b(confirm award|issue po|proceed with award)\b/.test(t))
+    return { type: 'confirmAward' };
 
-  if (/\b(attach|upload|document|file|spec sheet|sow|quote)\b/.test(t))
-    return { type: 'upload' };
+  if (/\b(award|proceed to award|select featherlite|go with featherlite)\b/.test(t))
+    return { type: 'award' };
 
   if (/\b(what is benchmarking|explain benchmarking|benchmarking mean)\b/.test(t))
     return { type: 'whatBenchmark' };
@@ -378,8 +378,17 @@ function nlp(text) {
   if (/\b(display benchmark|show benchmark|proceed to benchmark|yes, display)\b/.test(t))
     return { type: 'showBenchmark' };
 
+  if (/\b(yes|looks good|correct|sounds good|proceed|go ahead|sure|okay|ok|confirm|yep|great|perfect|done|approved)\b/.test(t))
+    return { type: 'confirm' };
+
+  if (/\b(attach|upload|document|file|spec sheet|sow|quote)\b/.test(t))
+    return { type: 'upload' };
+
   if (/\b(skip|no attach|without|no attachment|without attachments|create without)\b/.test(t))
     return { type: 'skip' };
+
+  if (/\b(benchmark|price benchmark)\b/.test(t))
+    return { type: 'benchmark' };
 
   if (/\b(monitor|response|view response|analyse|analysis|analyz)\b/.test(t))
     return { type: 'monitor' };
@@ -395,12 +404,6 @@ function nlp(text) {
 
   if (/\b(compare|vs\.?|versus)\b/.test(t) || (Object.keys(SUPPLIER_ALIASES).filter(a => t.includes(a)).length >= 2))
     return { type: 'compare' };
-
-  if (/\b(award|proceed to award|select featherlite|go with featherlite)\b/.test(t))
-    return { type: 'award' };
-
-  if (/\b(confirm award|issue po|proceed with award)\b/.test(t))
-    return { type: 'confirmAward' };
 
   if (/\b(add all 4|add all four|invite all 4|all 4 supplier)\b/.test(t))
     return { type: 'addAll' };
@@ -1503,7 +1506,7 @@ async function handleStep15(intent, text) {
     }
   }
 
-  if (intent.type === 'award') {
+  if (intent.type === 'award' || (intent.type === 'confirm' && /\baward\b/i.test(text) && !S.awaitingAwardConfirm)) {
     S.awaitingAwardConfirm = true;
     saveState();
     updateUI();
@@ -1594,7 +1597,10 @@ function bindMessageEvents() {
 /* ── UI Updates ── */
 function updateChips() {
   const el = document.getElementById('chips');
-  const chips = CHIPS[S.step] || [];
+  let chips = CHIPS[S.step] || [];
+  if (S.step === 15 && S.awaitingAwardConfirm) {
+    chips = CHIPS[16];
+  }
   el.innerHTML = chips.map(c => `<button class="chip" data-chip="${esc(c)}">${esc(c)}</button>`).join('');
   el.querySelectorAll('.chip').forEach(btn => {
     btn.addEventListener('click', () => {
