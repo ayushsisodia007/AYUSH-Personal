@@ -449,6 +449,71 @@ body {
 
 .success-ref { font-size: 12px; color: var(--text-muted); }
 
+.event-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #F8FAFC;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.attachment-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.attachment-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.attachment-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.attachment-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid #BFDBFE;
+  border-radius: 6px;
+  background: #EFF6FF;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.attachment-download:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
 .hidden { display: none !important; }
 
 @media (max-width: 640px) {
@@ -457,4 +522,6 @@ body {
   .field.span-2,
   .preview-item.span-2 { grid-column: auto; }
   .supplier-meta { text-align: left; width: 100%; }
+  .attachment-item { flex-direction: column; align-items: stretch; }
+  .attachment-download { justify-content: center; }
 }

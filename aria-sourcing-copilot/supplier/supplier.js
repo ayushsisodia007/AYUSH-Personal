@@ -42,6 +42,27 @@ const ACCEPTED_UPLOAD_TYPES = [
 
 const ACCEPTED_UPLOAD_EXT = /\.(pdf|doc|docx|xls|xlsx|jpg|jpeg|png|webp)$/i;
 
+const EVENT_ATTACHMENTS = [
+  {
+    id: 'desk-spec',
+    name: 'Desk_Spec_Sheet.pdf',
+    size: 2457600,
+    desc: 'Height-adjustable desk specifications, dimensions, and monitor arm requirements',
+  },
+  {
+    id: 'eval-criteria',
+    name: 'Vendor_Evaluation_Criteria.pdf',
+    size: 1100000,
+    desc: 'Evaluation criteria and commercial scoring guidelines',
+  },
+  {
+    id: 'site-layout',
+    name: 'Whitefield_Site_Layout.pdf',
+    size: 890000,
+    desc: 'Floor plan and installation locations at Whitefield campus',
+  },
+];
+
 const DEMO_EXTRACT = {
   1: {
     model: 'Optima Sit-Stand Pro — height range 65–125 cm, electric adjust, 140×70 cm desktop',
@@ -115,6 +136,54 @@ let uploadedFileName = '';
 
 function formatPrice(n) {
   return '₹' + Number(n).toLocaleString('en-IN');
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function renderAttachments() {
+  const el = document.getElementById('eventAttachments');
+  if (!el) return;
+  el.innerHTML = EVENT_ATTACHMENTS.map(a => `
+    <div class="attachment-item">
+      <div class="attachment-info">
+        <span class="attachment-icon" aria-hidden="true">📄</span>
+        <div>
+          <div class="attachment-name">${a.name}</div>
+          <div class="attachment-meta">${a.desc} · ${formatFileSize(a.size)}</div>
+        </div>
+      </div>
+      <button type="button" class="attachment-download" data-attach-id="${a.id}" aria-label="Download ${a.name}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
+    </div>`).join('');
+}
+
+function downloadAttachment(id) {
+  const file = EVENT_ATTACHMENTS.find(a => a.id === id);
+  if (!file) return;
+  const content = [
+    'Aria Supplier Portal — RFQ Event Attachment (Demo)',
+    '',
+    `File: ${file.name}`,
+    `Event: ${EVENT.name}`,
+    `Event ID: ${eventId}`,
+    '',
+    file.desc,
+    '',
+    'This is a prototype placeholder. In production, the buyer-uploaded file would download here.',
+  ].join('\n');
+  const blob = new Blob([content], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function getSupplier() {
@@ -268,6 +337,12 @@ function resetUpload() {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderEvent();
+  renderAttachments();
+
+  document.getElementById('eventAttachments').addEventListener('click', e => {
+    const btn = e.target.closest('[data-attach-id]');
+    if (btn) downloadAttachment(btn.dataset.attachId);
+  });
 
   document.querySelectorAll('.method-tab').forEach(tab => {
     tab.addEventListener('click', () => switchMethod(tab.dataset.method));
