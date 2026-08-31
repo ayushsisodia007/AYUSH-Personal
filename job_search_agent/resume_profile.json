@@ -1,0 +1,87 @@
+{
+  "name": "Ayush Sisodia",
+  "current_role": "Associate Product Manager",
+  "current_company": "Zycus",
+  "email": "ayushsisodia786@gmail.com",
+  "experience_years": 3,
+  "education": ["MBA - IIT Jodhpur", "B.Com Hons - AMU"],
+  "target_roles": [
+    "Product Manager",
+    "Senior Product Manager",
+    "Associate Product Manager",
+    "AI Product Manager",
+    "SaaS Product Manager",
+    "Growth Product Manager",
+    "Digital Product Manager",
+    "Platform Product Manager",
+    "Product Lead",
+    "Group Product Manager"
+  ],
+  "excluded_roles": [
+    "Technical Product Manager",
+    "TPM",
+    "Engineering Manager",
+    "Project Manager",
+    "Program Manager",
+    "Scrum Master"
+  ],
+  "target_locations": [
+    "Bangalore",
+    "Bengaluru",
+    "Gurgaon",
+    "Gurugram",
+    "Noida",
+    "Greater Noida",
+    "Hyderabad",
+    "Remote"
+  ],
+  "min_ctc_lpa": 18,
+  "target_ctc_lpa": 25,
+  "max_days_old": 14,
+  "skills": {
+    "core_ai": [
+      "Agentic AI",
+      "GenAI",
+      "LLM",
+      "Multi-agent Orchestration",
+      "Prompt Engineering",
+      "AI Product Strategy"
+    ],
+    "product_frameworks_and_tools": [
+      "RICE Framework",
+      "Kano Model",
+      "Agile",
+      "Scrum",
+      "Jira",
+      "Confluence",
+      "PRD Writing",
+      "Roadmap Planning",
+      "OKRs",
+      "A/B Testing",
+      "User Research",
+      "Product Analytics"
+    ],
+    "domain": [
+      "B2B SaaS",
+      "Procurement Automation",
+      "Tail Spend",
+      "Enterprise Workflows",
+      "API Integration",
+      "Multi-tenant SaaS",
+      "Supply Chain"
+    ],
+    "soft": [
+      "Cross-functional Leadership",
+      "Stakeholder Management",
+      "0-to-1 Product Development",
+      "Product Strategy"
+    ]
+  },
+  "key_achievements": [
+    "Launched Agentic AI 'ANA' 0-to-1 in 2 months for 4 enterprise clients",
+    "Built GenAI chatbot 'My Merlin AI' — 23% service quality improvement",
+    "34% reduction in procurement cycle times via tail-spend automation",
+    "200% increase in product subscriptions using RICE & Kano",
+    "Won Best Cross-Product PM award at Zycus"
+  ]
+}

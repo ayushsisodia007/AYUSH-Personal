@@ -1,0 +1,4 @@
+smtp_config.json
+sent_jobs_history.json
+agent_run.log
+daily_job_digest_latest.html
