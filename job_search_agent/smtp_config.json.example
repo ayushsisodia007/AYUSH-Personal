@@ -1,0 +1,7 @@
+{
+  "sender_email": "your.email@gmail.com",
+  "recipient_email": "ayushsisodia786@gmail.com",
+  "app_password": "your-gmail-app-password",
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587
+}
