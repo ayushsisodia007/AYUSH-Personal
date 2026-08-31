@@ -20,10 +20,7 @@ class EmailSender:
 
     def _load_config(self):
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(
-                f"SMTP config not found at {self.config_path}. "
-                "Copy smtp_config.json.example to smtp_config.json and fill in credentials."
-            )
+            return {}
         with open(self.config_path, encoding="utf-8") as handle:
             return json.load(handle)
 
@@ -35,6 +32,13 @@ class EmailSender:
 
     def send_digest(self, html_content, subject):
         self._save_html_backup(html_content)
+
+        if not self.config:
+            print(safe_text(
+                f"SMTP config not found at {self.config_path} — HTML digest saved locally. "
+                "Copy smtp_config.json.example to smtp_config.json and fill in credentials."
+            ))
+            return False
 
         sender = self.config.get("sender_email")
         recipient = self.config.get("recipient_email", sender)
