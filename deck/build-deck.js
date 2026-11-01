@@ -3,6 +3,16 @@ const pptxgen = require('pptxgenjs'); const React = require('react'); const RDS 
 const fa = require('react-icons/fa');
 const { applyTheme } = require('/root/.claude/skills/synced/605be188-2930-4ef5-9967-a504c315f413_2f4398b4-341c-40d7-af0e-db3c58209366/pptx/scripts/apply_theme.js');
 const facts = JSON.parse(fs.readFileSync('assets/facts.json', 'utf8'));
+const QR = require('qrcode');
+const PROTO_URL = 'https://claude.ai/artifact/4rxU4aF7oFMoAdpG9Un7Pd';
+const COVER = {};
+async function rounded(p, r) { const img = sharp(p), m = await img.metadata(); const mask = Buffer.from('<svg width="' + m.width + '" height="' + m.height + '"><rect width="' + m.width + '" height="' + m.height + '" rx="' + r + '" ry="' + r + '"/></svg>'); const buf = await img.composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer(); return 'image/png;base64,' + buf.toString('base64'); }
+async function prepCover() {
+  COVER.dash = await rounded('assets/dashboard.png', 28); COVER.j1 = await rounded('assets/j1_lead.png', 28); COVER.j2 = await rounded('assets/j2_meeting.png', 28);
+  const logo = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6B5BE6"/><stop offset="1" stop-color="#78BFE8"/></linearGradient></defs><rect width="512" height="512" rx="118" fill="url(#g)"/><g transform="translate(106 106) scale(12.5)" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18c4-1 6-5 8-12 1 5 3 9 8 10M9 14l3 2 3-2"/></g></svg>';
+  COVER.logo = 'image/png;base64,' + (await sharp(Buffer.from(logo)).png().toBuffer()).toString('base64');
+  const qr = await QR.toBuffer(PROTO_URL, { width: 400, margin: 1, color: { dark: '#17162A', light: '#FFFFFF' } }); COVER.qr = 'image/png;base64,' + qr.toString('base64');
+}
 
 const THEME = { name: 'Kestrel', headFontFace: 'Calibri', bodyFontFace: 'Calibri', colors: { dk1: '17162A', lt1: 'FFFFFF', dk2: '2B2A55', lt2: 'F1F0FA', accent1: '6B5BE6', accent2: '78BFE8', accent3: '4FCFA7', accent4: 'F0A24A', accent5: 'C62828', accent6: '5E5C7A', hlink: '6B5BE6', folHlink: '8D7FF9' } };
 const HEX = THEME.colors;
@@ -36,20 +46,36 @@ function newSlide(section, title, notes) { const s = pres.addSlide({ masterName:
 const src = (s, text, x, y, w) => txt(s, text, x, y, w, 0.4, { fontSize: 10, color: MUTE });
 
 (async () => {
-  await loadIcons();
+  await loadIcons(); await prepCover();
   pres.addSection({ title: 'Why' });
 
-  /* ===== 1. Thesis ===== */
+  /* ===== 1. Cover ===== */
   { const s = pres.addSlide({ masterName: 'DARK', sectionTitle: 'Why' });
-    s.addNotes('Open with the thesis in one breath: CRM today is a system of record that depends on people to remember and type. Kestrel makes it a system of intelligent revenue execution. Three outcomes: eliminate admin, understand relationships, recommend the next best action. About 1 minute.');
-    txt(s, 'PRODUCT MANAGER, AI SOLUTIONS  ·  8TH ELEMENT ASSESSMENT', X0, 0.55, 8, 0.3, { fontSize: 12, bold: true, color: SKY, charSpacing: 2 });
-    txt(s, 'CRM should not depend on humans to remember everything', X0, 1.35, 7.4, 2.5, { fontSize: 48, bold: true, color: WHITE });
-    txt(s, 'From a system of record to a system of intelligent revenue execution.', X0, 4.0, 6.9, 0.9, { fontSize: 20, color: SKY });
-    s.addImage({ path: 'assets/dashboard.png', x: 8.2, y: 1.2, w: 4.55, h: 4.55 * 640 / 1150, rounding: false, shadow: { type: 'outer', color: '000000', blur: 18, offset: 4, angle: 90, opacity: 0.45 }, altText: 'Kestrel dashboard prototype showing pipeline, win rate and forecast' });
-    tag(s, 'proto', 8.2, 1.2 + 4.55 * 640 / 1150 + 0.12, 'PROTOTYPE · SAMPLE DATA', 2.3);
-    const outs = [['FaKeyboard_w', 'Eliminate manual sales administration'], ['FaBrain_w', 'Understand every customer relationship'], ['FaBullseye_w', 'Recommend and orchestrate the next best action']];
-    outs.forEach((o, i) => { const x = X0 + i * 4.1; s.addShape(S.roundRect, { x, y: 5.35, w: 3.9, h: 1.05, rectRadius: 0.14, fill: { color: DEEP }, line: { color: DEEP, width: 0 } }); circle(s, x + 0.22, 5.62, 0.5, IND, ICONS[o[0]]); txt(s, o[1], x + 0.92, 5.35, 2.8, 1.05, { fontSize: 16, bold: true, color: WHITE, valign: 'middle' }); });
-    txt(s, 'Ayush Sisodia', X0, 6.85, 4, 0.3, { fontSize: 12, color: SKY }); }
+    s.addNotes('Introduce yourself and the assignment: Reimagine CRM for the future of sales, for the Product Manager, AI Solutions role at 8th Element. Name the product, Kestrel, and say the one-line thesis: CRM should not depend on humans to remember everything. Mention the live prototype link and QR code: the panel can open it any time, and everything in it is fictional sample data. About 30 seconds.');
+    txt(s, '8TH ELEMENT  ·  PRODUCT MANAGER ASSIGNMENT', X0, 0.55, 7, 0.3, { fontSize: 12, bold: true, color: SKY, charSpacing: 3 });
+    s.addImage({ data: COVER.logo, x: X0, y: 1.2, w: 0.95, h: 0.95, altText: 'Kestrel logo' });
+    txt(s, 'Kestrel', X0 + 1.2, 1.1, 5.0, 1.15, { fontSize: 66, bold: true, color: WHITE, valign: 'middle' });
+    txt(s, 'The AI-native Revenue Operating System', X0, 2.45, 6.2, 0.5, { fontSize: 24, bold: true, color: SKY });
+    txt(s, 'Reimagining CRM for the future of sales', X0, 3.0, 6.2, 0.4, { fontSize: 16, color: WHITE });
+    txt(s, '"CRM should not depend on humans to remember everything."', X0, 3.5, 6.2, 0.4, { fontSize: 14, italic: true, color: 'C9C6EA' });
+    txt(s, 'PREPARED BY', X0, 4.35, 4, 0.25, { fontSize: 10, bold: true, color: 'A9A6D0', charSpacing: 2 });
+    txt(s, 'Ayush Sisodia', X0, 4.6, 6, 0.5, { fontSize: 26, bold: true, color: WHITE });
+    txt(s, 'Product Manager, AI Solutions  ·  November 2026', X0, 5.08, 6, 0.3, { fontSize: 13, color: 'C9C6EA' });
+    /* live prototype link + QR */
+    s.addShape(S.roundRect, { x: X0, y: 5.6, w: 6.0, h: 1.3, rectRadius: 0.14, fill: { color: DEEP }, line: { color: IND, width: 1.25 }, objectName: 'Prototype link card' });
+    txt(s, 'TRY THE LIVE PROTOTYPE', X0 + 0.3, 5.75, 4.2, 0.25, { fontSize: 10, bold: true, color: MINT, charSpacing: 2 });
+    s.addText([{ text: 'Open Kestrel in your browser', options: { hyperlink: { url: PROTO_URL, tooltip: 'Open the Kestrel prototype' }, bold: true, color: WHITE, fontSize: 18, underline: { style: 'sng', color: 'FFFFFF' } } }], { x: X0 + 0.3, y: 6.02, w: 4.1, h: 0.4, margin: 0, isTextBox: true, fontFace: 'Calibri', valign: 'middle' });
+    s.addText([{ text: 'claude.ai/artifact/4rxU4aF7oFMoAdpG9Un7Pd', options: { hyperlink: { url: PROTO_URL, tooltip: 'Open the Kestrel prototype' }, color: SKY, fontSize: 11 } }], { x: X0 + 0.3, y: 6.4, w: 4.1, h: 0.25, margin: 0, isTextBox: true, fontFace: 'Calibri' });
+    txt(s, 'Sample data only. Click, or scan.', X0 + 0.3, 6.66, 4.1, 0.22, { fontSize: 10, color: 'A9A6D0' });
+    s.addShape(S.roundRect, { x: X0 + 4.55, y: 5.75, w: 1.0, h: 1.0, rectRadius: 0.08, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
+    s.addImage({ data: COVER.qr, x: X0 + 4.6, y: 5.8, w: 0.9, h: 0.9, altText: 'QR code linking to the live Kestrel prototype' });
+    /* screen collage from the working prototype */
+    const sh = { type: 'outer', color: '000000', blur: 16, offset: 4, angle: 90, opacity: 0.5 };
+    s.addImage({ data: COVER.dash, x: 7.05, y: 0.65, w: 5.7, h: 5.7 * 640 / 1150, shadow: Object.assign({}, sh), altText: 'Kestrel dashboard with pipeline, win rate and forecast' });
+    const y2 = 0.65 + 5.7 * 640 / 1150 + 0.22;
+    s.addImage({ data: COVER.j1, x: 7.05, y: y2, w: 2.75, h: 2.75 * 1320 / 1400, shadow: Object.assign({}, sh), altText: 'AI Lead Intelligence panel explaining a lead score' });
+    s.addImage({ data: COVER.j2, x: 9.9, y: y2, w: 2.85, h: 2.85 * 1280 / 1472, shadow: Object.assign({}, sh), altText: 'Meeting Intelligence proposals with quotes and confidence' });
+    txt(s, 'Screens from the working prototype. All data is fictional.', 7.05, 6.88, 5.7, 0.25, { fontSize: 10, color: 'A9A6D0' }); }
 
   /* ===== 2. Problem ===== */
   { const s = newSlide('Why', 'Sales teams lose revenue intelligence across fragmented workflows', 'Three connected problems. Reps spend time updating records instead of selling. What matters is scattered across email, calls and meetings, so the CRM is incomplete. Managers then see deal risk and churn signals too late. The sources are self-reported surveys, so say so if asked. About 1.5 minutes.');
