@@ -1,0 +1,506 @@
+<title>Kestrel CRM Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: left nav + one working screen at a time; cards only where an object is actionable. */
+:root {
+  --bg: #f2f5f7; --surface: #ffffff; --surface-2: #f7f9fa; --ink: #13202b; --muted: #586a78; --line: #dce3e8;
+  --accent: #0d6b63; --accent-ink: #ffffff; --accent-soft: #dcf0ed;
+  --g: #1b8f4e; --g-soft: #dff3e6; --y: #a77b00; --y-soft: #fbf0c8; --o: #c85a05; --o-soft: #fde5d0; --r: #c62828; --r-soft: #fbdcdc;
+  --hl: #fff3b0;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d151b; --surface: #141f27; --surface-2: #1a2731; --ink: #e5edf2; --muted: #92a4b1; --line: #27363f;
+    --accent: #43c6b8; --accent-ink: #062521; --accent-soft: #123430;
+    --g: #4cc47f; --g-soft: #123423; --y: #e3b93a; --y-soft: #3a3010; --o: #f09342; --o-soft: #3d2410; --r: #ef7373; --r-soft: #3c1818;
+    --hl: #4a4210; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d151b; --surface: #141f27; --surface-2: #1a2731; --ink: #e5edf2; --muted: #92a4b1; --line: #27363f;
+  --accent: #43c6b8; --accent-ink: #062521; --accent-soft: #123430;
+  --g: #4cc47f; --g-soft: #123423; --y: #e3b93a; --y-soft: #3a3010; --o: #f09342; --o-soft: #3d2410; --r: #ef7373; --r-soft: #3c1818;
+  --hl: #4a4210; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 26px; line-height: 1.15; }
+h2 { font-size: 18px; }
+h3 { font-size: 15px; }
+p { margin: 0; }
+button, select, input { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+.shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+.side { background: var(--surface); border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; padding: 0 6px; }
+.brand-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 14px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav button { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.nav button:hover { background: var(--surface-2); color: var(--ink); }
+.nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.count { font-family: var(--font-mono); font-size: 11px; background: var(--r); color: #fff; border-radius: 10px; padding: 0 6px; min-width: 18px; text-align: center; }
+.count.hidden { display: none; }
+.side-foot { margin-top: auto; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+.theme-btn { all: unset; cursor: pointer; border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; text-align: center; }
+.theme-btn:focus-visible { outline: 2px solid var(--accent); }
+
+.main { padding-block: 24px 48px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); min-width: 0; display: flex; flex-direction: column; gap: 20px; max-width: 1180px; }
+.banner { font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.head p { color: var(--muted); max-width: 62ch; margin-top: 6px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel > h2 { margin-bottom: 4px; }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { all: unset; box-sizing: border-box; cursor: pointer; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; font-size: 13px; }
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.sm { padding: 4px 9px; font-size: 12px; }
+.btn[disabled] { opacity: .5; cursor: default; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 12px; white-space: nowrap; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.green { color: var(--g); background: var(--g-soft); }
+.pill.yellow { color: var(--y); background: var(--y-soft); }
+.pill.orange { color: var(--o); background: var(--o-soft); }
+.pill.red { color: var(--r); background: var(--r-soft); }
+.tag { font-family: var(--font-mono); font-size: 11px; padding: 1px 7px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tag.src { color: var(--accent); border-color: var(--accent); background: transparent; }
+
+/* Today */
+.signals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.signal { all: unset; box-sizing: border-box; cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.signal:hover { border-color: var(--accent); }
+.signal:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.signal .big { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1; }
+.actions { display: flex; flex-direction: column; }
+.action { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); align-items: start; }
+.action:first-child { border-top: 0; }
+.rank { font-family: var(--font-mono); color: var(--muted); font-size: 12px; padding-top: 2px; }
+.action .why { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.action .meta { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+/* Call capture */
+.call-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; align-items: start; }
+.transcript { display: flex; flex-direction: column; gap: 2px; max-height: 520px; overflow-y: auto; }
+.tline { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding: 6px 8px; border-radius: 6px; transition: background .15s; }
+.tline .n { font-family: var(--font-mono); font-size: 11px; color: var(--muted); padding-top: 2px; }
+.tline .who { font-weight: 600; }
+.tline.hl { background: var(--hl); }
+.prop { border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.prop.accepted { border-color: var(--g); background: var(--g-soft); }
+.prop.rejected { opacity: .55; }
+.prop-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.field { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.change { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-weight: 500; }
+.change .from { color: var(--muted); text-decoration: line-through; }
+.change .arrow { color: var(--muted); }
+.change .to { font-weight: 600; }
+.evid { font-size: 12px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 8px; }
+.edit-in { border: 1px solid var(--accent); border-radius: 6px; padding: 5px 8px; background: var(--surface); min-width: 0; flex: 1 1 160px; }
+.props { display: flex; flex-direction: column; gap: 10px; }
+
+/* Pipeline */
+.board { display: grid; grid-template-columns: repeat(4, minmax(210px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.col { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; }
+.col h3 { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-family: var(--font-body); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.deal { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.deal.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 0 transparent; } }
+.deal .val { font-weight: 600; }
+.deal .risk { font-size: 12px; color: var(--o); }
+.deal .auto { font-size: 11px; color: var(--accent); }
+
+/* Radar */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr.gap td { background: var(--o-soft); font-weight: 600; }
+.gapflag { color: var(--o); font-size: 12px; font-weight: 600; }
+.evlist { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.ev { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 13px; }
+.targets { display: flex; flex-direction: column; margin-top: 8px; }
+.target { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); align-items: center; }
+.fit { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.alertcard { border: 1px solid var(--o); background: var(--surface); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Health */
+.cust-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cust { all: unset; box-sizing: border-box; cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cust:hover { border-color: var(--accent); }
+.cust:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cust[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cust-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.counts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.rules { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.rule { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: center; }
+.feed { display: flex; flex-direction: column; }
+.fitem { padding: 12px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.fitem:first-child { border-top: 0; padding-top: 0; }
+.move { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.tickets { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.tk { display: grid; grid-template-columns: 70px 34px minmax(0, 1fr) auto; gap: 8px; font-size: 13px; align-items: baseline; }
+.tk.old { opacity: .5; }
+
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 50; max-width: calc(100vw - 32px); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px max(16px, env(safe-area-inset-left, 0px)); gap: 8px; }
+  .nav { flex-direction: row; overflow-x: auto; max-width: 100%; }
+  .nav button { white-space: nowrap; }
+  .side-foot { display: none; }
+  .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .call-grid, .grid2, .signals, .grid3 { grid-template-columns: minmax(0, 1fr); }
+  .cust-list { grid-template-columns: minmax(0, 1fr); }
+  .action { grid-template-columns: 24px minmax(0, 1fr); }
+  .action .btn { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .deal.flash { animation: none; } #toast { transition: none; } }
+</style>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="brand-mark">K</span>Kestrel</div>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div class="side-foot">
+      <span>Working name. Sample data only.</span>
+      <button class="theme-btn" id="themeBtn" type="button">Toggle theme</button>
+    </div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---------- sample data (all fictional) ---------- */
+  var VIEWS = [
+    { id: 'today', label: 'Today' },
+    { id: 'call', label: 'Call capture' },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'radar', label: 'Market Radar' },
+    { id: 'health', label: 'Customer health' }
+  ];
+  var STAGES = ['Discovery', 'Demo', 'Proposal', 'Negotiation'];
+
+  var transcript = [
+    { who: 'You', t: "Thanks for making time, Priya. Last week's demo covered shift scheduling and payroll sync. Any questions?" },
+    { who: 'Priya', t: 'Mostly good. The payroll sync is what the team liked most.' },
+    { who: 'Priya', t: "We've set aside about twenty lakh for this year, so anything around that works for us." },
+    { who: 'Priya', t: 'I sign off on spend, but Arjun from IT will need to clear the security review.' },
+    { who: 'Priya', t: 'Honestly, we are also looking at Vantage HR. They sent us a proposal last week.' },
+    { who: 'Priya', t: "Send us a formal quote by Friday and I'll take it to the board on the 12th." },
+    { who: 'Arjun', t: "(joined) I'll need your SOC 2 report and data residency details before then." },
+    { who: 'You', t: "Will do. I'll send both along with the quote." }
+  ];
+  var proposals0 = [
+    { id: 'p1', field: 'Deal stage', from: 'Demo', to: 'Proposal', line: 6, conf: 0.93, status: 'pending' },
+    { id: 'p2', field: 'Budget', from: 'Not set', to: '₹20 lakh', line: 3, conf: 0.9, status: 'pending' },
+    { id: 'p3', field: 'Economic buyer', from: 'Unknown', to: 'Priya Menon (CFO)', line: 4, conf: 0.88, status: 'pending' },
+    { id: 'p4', field: 'New contact', from: 'None', to: 'Arjun Rao (IT, security review)', line: 7, conf: 0.84, status: 'pending' },
+    { id: 'p5', field: 'Next step', from: 'None', to: 'Send quote + SOC 2 by Fri 6 Nov', line: 6, conf: 0.9, status: 'pending' },
+    { id: 'p6', field: 'Competitor', from: 'None', to: 'Vantage HR (proposal sent)', line: 5, conf: 0.95, status: 'pending' }
+  ];
+  var otherDeals = [
+    { name: 'Meridian Retail, store staffing', stage: 'Proposal', val: '₹14L', risk: 'Champion silent for 12 days' },
+    { name: 'Lotus Hospitals, expansion', stage: 'Negotiation', val: '₹9L', risk: '' },
+    { name: 'Nimbus Telecom, new region', stage: 'Discovery', val: '₹30L', risk: '' },
+    { name: 'Zenith Pharma, compliance add-on', stage: 'Demo', val: '₹7L', risk: 'No economic buyer engaged' }
+  ];
+
+  var inds = [
+    { n: 'Banking', you: 12, a: 8, b: 5, c: 3 },
+    { n: 'Retail', you: 7, a: 4, b: 6, c: 2 },
+    { n: 'Healthcare', you: 5, a: 3, b: 2, c: 4 },
+    { n: 'Logistics', you: 4, a: 3, b: 1, c: 2 },
+    { n: 'Aviation', you: 0, a: 2, b: 1, c: 0 }
+  ];
+  var evidence = [
+    { type: 'Case study', txt: 'Vantage HR published a case study with Skyway Airlines (ground-crew shift scheduling).', date: '27 Oct' },
+    { type: 'Case study', txt: 'Vantage HR listed Aerolink Ground Services among new customers.', date: '29 Oct' },
+    { type: 'Job post', txt: 'Orbit People is hiring an "Aviation Sales Manager".', date: '30 Oct' }
+  ];
+  var targets = [
+    { n: 'Cirrus Air', fit: 91, why: 'Large ground crew, shift-heavy' },
+    { n: 'Deccan Wings', fit: 88, why: 'Similar size to Skyway Airlines' },
+    { n: 'Meghdoot Airports', fit: 84, why: 'Multi-site payroll' },
+    { n: 'Arrow Cargo Air', fit: 79, why: 'Cargo handling shifts' },
+    { n: 'Lakshya Aviation Services', fit: 76, why: 'Outsourced ground staff' }
+  ];
+
+  var customers0 = [
+    { id: 'harbor', n: 'Harbor Bank', arr: '₹42L', renew: 'in 118 days', tk: [{ p: 'P3', d: 6, s: 'Report export slow' }] },
+    { id: 'meridian', n: 'Meridian Retail', arr: '₹18L', renew: 'in 74 days', tk: [{ p: 'P2', d: 1, s: 'Shift sync failing at 3 stores' }, { p: 'P3', d: 9, s: 'Wrong holiday calendar' }] },
+    { id: 'cobalt', n: 'Cobalt Logistics', arr: '₹26L', renew: 'in 47 days', tk: [{ p: 'P2', d: 1, s: 'Payroll run delayed' }, { p: 'P2', d: 3, s: 'Login errors for drivers' }, { p: 'P3', d: 5, s: 'Mobile app crash' }] },
+    { id: 'nimbus', n: 'Nimbus Telecom', arr: '₹31L', renew: 'in 201 days', tk: [] },
+    { id: 'lotus', n: 'Lotus Hospitals', arr: '₹12L', renew: 'in 88 days', tk: [{ p: 'P3', d: 0, s: 'Duty roster print layout' }, { p: 'P3', d: 2, s: 'Leave balance mismatch' }] },
+    { id: 'zenith', n: 'Zenith Pharma', arr: '₹22L', renew: 'in 150 days', tk: [{ p: 'P3', d: 3, s: 'Slow dashboard' }] }
+  ];
+  var alerts0 = [
+    { cust: 'Cobalt Logistics', from: 'yellow', to: 'orange', when: 'Yesterday', why: '2 P2 tickets in 7 days (SUP-4102, SUP-4107)', act: 'Book an exec call this week. Renewal is in 47 days and ₹26L is at stake.' },
+    { cust: 'Lotus Hospitals', from: 'green', to: 'yellow', when: 'Today', why: '2 P3 tickets in 7 days (SUP-4110, SUP-4113)', act: 'Ask the CSM to review both tickets before the next check-in.' }
+  ];
+  var LABEL = { green: 'Green', yellow: 'Yellow', orange: 'Orange', red: 'Red' };
+  var RANK = { green: 0, yellow: 1, orange: 2, red: 3 };
+
+  /* ---------- state ---------- */
+  var state;
+  function fresh() {
+    return {
+      view: 'today', cadence: 'daily', targetList: false, targetsAdded: false, selected: 'cobalt', simCust: 'harbor', tkId: 4120, flash: '',
+      proposals: JSON.parse(JSON.stringify(proposals0)),
+      customers: JSON.parse(JSON.stringify(customers0)),
+      alerts: JSON.parse(JSON.stringify(alerts0))
+    };
+  }
+  state = fresh();
+
+  /* ---------- logic ---------- */
+  function counts(c) {
+    var r = { P1: 0, P2: 0, P3: 0 };
+    c.tk.forEach(function (t) { if (t.d <= 6) r[t.p]++; });
+    return r;
+  }
+  function health(c) {
+    var k = counts(c);
+    if (k.P1 >= 1 || k.P2 >= 3) return 'red';
+    if (k.P2 >= 2 || (k.P2 >= 1 && k.P3 >= 2)) return 'orange';
+    if (k.P2 === 1 || k.P3 >= 2) return 'yellow';
+    return 'green';
+  }
+  function prop(id) { return state.proposals.filter(function (p) { return p.id === id; })[0]; }
+  function val(id) { var p = prop(id); return p.status === 'accepted' ? p.to : p.from; }
+  function pendingCount() { return state.proposals.filter(function (p) { return p.status === 'pending'; }).length; }
+  function atRisk() { return state.customers.filter(function (c) { return RANK[health(c)] >= 1; }); }
+  function toast(m) {
+    var t = $('#toast'); t.textContent = m; t.classList.add('show');
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  function pill(s) { return '<span class="pill ' + s + '">' + LABEL[s] + '</span>'; }
+
+  /* ---------- views ---------- */
+  function vToday() {
+    var pend = pendingCount();
+    var first = pend > 0
+      ? { t: 'Review ' + pend + ' proposed updates from your call with Priya Menon', why: 'The call ended 2 minutes ago. Approving takes about 10 seconds and moves Harbor Bank to Proposal.', tags: ['Call · 11:30', 'Harbor Bank'], btn: 'Review updates', go: 'call' }
+      : { t: 'Send the quote and SOC 2 report to Priya by Fri 6 Nov', why: 'Priya takes it to the board on the 12th. Vantage HR already sent her a proposal.', tags: ['Next step from call', 'Due in 5 days'], btn: 'Open deal', go: 'pipeline' };
+    var cob = state.customers.filter(function (c) { return c.id === 'cobalt'; })[0];
+    var risky = atRisk().length;
+    var acts = [
+      first,
+      { t: 'Cobalt Logistics moved to ' + LABEL[health(cob)] + ' health', why: counts(cob).P2 + ' P2 tickets in 7 days. Renewal in 47 days, ₹26L ARR.', tags: ['Support tickets', 'Retention'], btn: 'See health', go: 'health' },
+      { t: 'Competitor Vantage HR won 2 aviation accounts. You have none.', why: 'Aviation is your only industry gap with competitor wins this week. A target list of 5 companies is ready.', tags: ['Market Radar', '3 public sources'], btn: 'See the gap', go: 'radar' },
+      { t: 'Meridian Retail: champion silent for 12 days', why: 'Last reply was 20 Oct. The ₹14L proposal has been open since. Meridian also has a P2 ticket open.', tags: ['Deal risk', 'Email activity'], btn: 'Open deal', go: 'pipeline' }
+    ];
+    return head('Good morning, Ayush', 'Four things worth your time today, ranked, each with the reason and where it came from.') +
+      '<div class="signals">' +
+      sig('call', pend + '', 'updates waiting for your approval') +
+      sig('health', risky + '', 'customers not Green this week') +
+      sig('radar', '1', 'new market gap: Aviation') +
+      '</div>' +
+      '<section class="panel"><h2>Your next best actions</h2><p class="sub">Generated from your calls, email, tickets and Market Radar.</p><div class="actions">' +
+      acts.map(function (a, i) {
+        return '<div class="action"><span class="rank">' + (i + 1) + '</span><div><h3>' + esc(a.t) + '</h3><p class="why">' + esc(a.why) + '</p><div class="meta">' + a.tags.map(function (t) { return '<span class="tag src">' + esc(t) + '</span>'; }).join('') + '</div></div><button class="btn" data-go="' + a.go + '">' + esc(a.btn) + '</button></div>';
+      }).join('') + '</div></section>';
+  }
+  function sig(go, big, lab) {
+    return '<button class="signal" data-go="' + go + '"><span class="big num">' + big + '</span><span class="muted">' + esc(lab) + '</span></button>';
+  }
+  function head(t, p, right) {
+    return '<div class="head"><div><h1>' + esc(t) + '</h1><p>' + esc(p) + '</p></div>' + (right || '') + '</div>';
+  }
+
+  function vCall() {
+    var lines = transcript.map(function (l, i) {
+      return '<div class="tline" data-line="' + (i + 1) + '"><span class="n">' + (i + 1) + '</span><div><span class="who">' + esc(l.who) + ':</span> ' + esc(l.t) + '</div></div>';
+    }).join('');
+    var props = state.proposals.map(function (p) {
+      var body;
+      if (p.editing) {
+        body = '<div class="row"><input class="edit-in" id="edit-' + p.id + '" value="' + esc(p.to) + '" aria-label="Edit value"><button class="btn sm primary" data-save="' + p.id + '">Save and accept</button><button class="btn sm" data-cancel="' + p.id + '">Cancel</button></div>';
+      } else if (p.status === 'pending') {
+        body = '<div class="row"><button class="btn sm primary" data-accept="' + p.id + '">Approve</button><button class="btn sm" data-edit="' + p.id + '">Edit</button><button class="btn sm" data-reject="' + p.id + '">Reject</button></div>';
+      } else {
+        body = '<div class="row"><span class="muted">' + (p.status === 'accepted' ? 'Applied to CRM' : 'Rejected') + '</span><button class="btn sm" data-undo="' + p.id + '">Undo</button></div>';
+      }
+      return '<div class="prop ' + p.status + '" data-line="' + p.line + '">' +
+        '<div class="prop-top"><span class="field">' + esc(p.field) + '</span><span class="row"><span class="tag">confidence ' + Math.round(p.conf * 100) + '%</span><span class="tag src">line ' + p.line + '</span></span></div>' +
+        '<div class="change"><span class="from">' + esc(p.from) + '</span><span class="arrow">→</span><span class="to">' + esc(p.to) + '</span></div>' +
+        '<div class="evid">"' + esc(transcript[p.line - 1].t) + '"</div>' + body + '</div>';
+    }).join('');
+    return head('Call capture', 'You finish the call. Kestrel proposes the CRM changes and shows the exact words behind each one. You decide.',
+      '<button class="btn primary" data-all="1"' + (pendingCount() ? '' : ' disabled') + '>Approve all ' + pendingCount() + ' pending</button>') +
+      '<div class="banner">Prototype note: this transcript and the extraction are scripted. The real product runs an LLM over the recording and keeps the same rule: nothing is written to the CRM without approval and a quote.</div>' +
+      '<div class="call-grid"><section class="panel"><h2>Harbor Bank · Priya Menon</h2><p class="sub">Today 11:30, 28 min. Hover a proposal to see its source line.</p><div class="transcript">' + lines + '</div></section>' +
+      '<section class="panel"><h2>Proposed changes</h2><p class="sub">' + pendingCount() + ' waiting · ' + state.proposals.filter(function (p) { return p.status === 'accepted'; }).length + ' applied</p><div class="props">' + props + '</div></section></div>';
+  }
+
+  function vPipeline() {
+    var stage = val('p1');
+    var harbor = {
+      name: 'Harbor Bank, HR platform', stage: stage, val: val('p2') === 'Not set' ? '₹—' : '₹20L', harbor: true,
+      lines: [
+        ['Economic buyer', val('p3')], ['Next step', val('p5')], ['Competitor', val('p6')], ['Contacts', prop('p4').status === 'accepted' ? '+ Arjun Rao' : '1 known']
+      ]
+    };
+    var all = [harbor].concat(otherDeals);
+    var cols = STAGES.map(function (s) {
+      var ds = all.filter(function (d) { return d.stage === s; });
+      return '<div class="col"><h3><span>' + s + '</span><span class="num">' + ds.length + '</span></h3>' + ds.map(function (d) {
+        var anyAuto = d.harbor && state.proposals.some(function (p) { return p.status === 'accepted'; });
+        return '<div class="deal' + (d.harbor && state.flash === 'deal' ? ' flash' : '') + '"><strong>' + esc(d.name) + '</strong><span class="val num">' + esc(d.val) + '</span>' +
+          (d.lines ? d.lines.map(function (l) { return '<span class="muted" style="font-size:12px">' + esc(l[0]) + ': <span style="color:var(--ink)">' + esc(l[1]) + '</span></span>'; }).join('') : '') +
+          (d.risk ? '<span class="risk">⚠ ' + esc(d.risk) + '</span>' : '') +
+          (anyAuto ? '<span class="auto">Updated from your call, approved by you</span>' : '') + '</div>';
+      }).join('') + '</div>';
+    }).join('');
+    return head('Pipeline', 'Deals update themselves from calls and email. Approve changes on Call capture and watch the Harbor Bank card change here.') +
+      '<div class="board">' + cols + '</div>';
+  }
+
+  function vRadar() {
+    var rows = inds.map(function (r) {
+      var gap = r.you === 0 && (r.a + r.b + r.c) > 0;
+      return '<tr class="' + (gap ? 'gap' : '') + '"><td>' + r.n + (gap ? ' <span class="gapflag">Gap</span>' : '') + '</td><td class="n">' + r.you + '</td><td class="n">' + r.a + '</td><td class="n">' + r.b + '</td><td class="n">' + r.c + '</td></tr>';
+    }).join('');
+    var next = state.cadence === 'daily' ? 'Tomorrow 06:00' : 'Tuesday 06:00';
+    var tl = state.targetList
+      ? '<div class="targets">' + targets.map(function (t) { return '<div class="target"><div><strong>' + esc(t.n) + '</strong><div class="muted" style="font-size:12px">' + esc(t.why) + '</div></div><span class="fit">fit ' + t.fit + '</span></div>'; }).join('') +
+        '</div><div class="row" style="margin-top:12px"><button class="btn primary" data-addtargets="1"' + (state.targetsAdded ? ' disabled' : '') + '>' + (state.targetsAdded ? 'Added to Discovery' : 'Add all to pipeline') + '</button></div>'
+      : '';
+    return head('Market Radar', 'Kestrel watches competitors on a schedule and compares their customers with yours, so you see markets they are entering before you lose them.',
+      '<div class="row"><label for="cad" class="muted">Scan</label><select id="cad" class="btn"><option value="daily"' + (state.cadence === 'daily' ? ' selected' : '') + '>every day</option><option value="alt"' + (state.cadence === 'alt' ? ' selected' : '') + '>every other day</option></select></div>') +
+      '<div class="banner">Prototype note: competitors, customers and sources here are fictional. The real product reads only public pages (case studies, news, job posts, reviews), links every claim to its source, and calls these signals, not confirmed deals.</div>' +
+      '<div class="alertcard"><div class="row"><span class="pill orange">New market gap</span><span class="tag">Last scan today 06:00 · 14 sources · next ' + next + '</span></div>' +
+      '<h2>Aviation: competitors have customers, you have none</h2>' +
+      '<div class="evlist">' + evidence.map(function (e) { return '<div class="ev"><span class="tag src">' + e.type + ' · ' + e.date + '</span><span>' + esc(e.txt) + '</span></div>'; }).join('') + '</div>' +
+      '<p class="muted">Suggested angle: shift scheduling for ground crews, the use case Vantage HR highlights.</p>' +
+      '<div class="row"><button class="btn primary" data-targets="1">' + (state.targetList ? 'Target list ready' : 'Create target list') + '</button><button class="btn" data-toast="Assigned to Ayush (sample)">Assign to a rep</button><button class="btn" data-toast="Dismissed. Kestrel will not repeat this signal (sample)">Dismiss</button></div>' + tl + '</div>' +
+      '<section class="panel"><h2>Who sells to which industry</h2><p class="sub">Customer counts. Yours come from your CRM, competitors from public signals, so treat theirs as a floor.</p><div class="table-wrap"><table><thead><tr><th>Industry</th><th class="n">You</th><th class="n">Vantage HR</th><th class="n">Orbit People</th><th class="n">Plumeria</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  }
+
+  function vHealth() {
+    var sel = state.customers.filter(function (c) { return c.id === state.selected; })[0] || state.customers[0];
+    var list = state.customers.map(function (c) {
+      var h = health(c), k = counts(c);
+      return '<button class="cust" data-cust="' + c.id + '" aria-pressed="' + (c.id === state.selected) + '"><div class="cust-top"><strong>' + esc(c.n) + '</strong>' + pill(h) + '</div>' +
+        '<div class="muted">' + esc(c.arr) + ' ARR · renews ' + esc(c.renew) + '</div><div class="counts"><span class="tag">P1 ' + k.P1 + '</span><span class="tag">P2 ' + k.P2 + '</span><span class="tag">P3 ' + k.P3 + '</span><span class="muted" style="font-size:12px">last 7 days</span></div></button>';
+    }).join('');
+    var tks = sel.tk.slice().sort(function (a, b) { return a.d - b.d; }).map(function (t) {
+      return '<div class="tk' + (t.d > 6 ? ' old' : '') + '"><span class="mono">' + (t.id || 'SUP-' + (4000 + sel.n.length * 7 + t.d)) + '</span><strong>' + t.p + '</strong><span>' + esc(t.s) + '</span><span class="muted">' + (t.d === 0 ? 'today' : t.d + 'd ago') + '</span></div>';
+    }).join('') || '<span class="muted">No tickets.</span>';
+    var feed = state.alerts.map(function (a) {
+      return '<div class="fitem"><div class="move"><span>' + esc(a.cust) + '</span>' + pill(a.from) + '<span class="muted">→</span>' + pill(a.to) + '<span class="muted" style="font-weight:400">' + esc(a.when) + '</span></div><p>' + esc(a.why) + '</p><p class="muted">Suggested: ' + esc(a.act) + '</p></div>';
+    }).join('');
+    var opts = state.customers.map(function (c) { return '<option value="' + c.id + '"' + (c.id === state.simCust ? ' selected' : '') + '>' + esc(c.n) + '</option>'; }).join('');
+    return head('Customer health', 'Support tickets turn into a simple status per customer. When one gets worse, the account owner is alerted with the reason and a next step.',
+      '<button class="btn" data-reset="1">Reset demo</button>') +
+      '<div class="grid2"><section class="panel"><h2>Alerts</h2><p class="sub">Newest first. Sent to the account owner and the CSM.</p><div class="feed" id="feed">' + feed + '</div></section>' +
+      '<section class="panel"><h2>Try it</h2><p class="sub">Log a ticket for a customer and watch their status and the alert feed react.</p>' +
+      '<div class="row"><label for="simc" class="muted">Customer</label><select id="simc" class="btn">' + opts + '</select></div>' +
+      '<div class="row" style="margin-top:10px"><button class="btn" data-tk="P3">+ P3 ticket</button><button class="btn" data-tk="P2">+ P2 ticket</button><button class="btn" data-tk="P1">+ P1 ticket</button></div>' +
+      '<h3 style="margin-top:18px">Rules (editable in the real product)</h3><div class="rules" style="margin-top:8px">' +
+      '<div class="rule">' + pill('yellow') + '<span>1 P2, or 2 P3 within 7 days</span></div>' +
+      '<div class="rule">' + pill('orange') + '<span>2 P2, or 1 P2 with 2 P3 within 7 days</span></div>' +
+      '<div class="rule">' + pill('red') + '<span>Any P1, or 3 P2 within 7 days</span></div></div></section></div>' +
+      '<div class="grid2"><section class="panel"><h2>All customers</h2><p class="sub">Select one to see its tickets.</p><div class="cust-list">' + list + '</div></section>' +
+      '<section class="panel"><h2>' + esc(sel.n) + ' tickets</h2><p class="sub">Grey rows are older than 7 days and do not count.</p><div class="tickets">' + tks + '</div></section></div>';
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    $('#nav').innerHTML = VIEWS.map(function (v) {
+      var n = v.id === 'call' ? pendingCount() : v.id === 'health' ? atRisk().length : v.id === 'radar' ? 1 : 0;
+      return '<button type="button" data-go="' + v.id + '"' + (v.id === state.view ? ' aria-current="page"' : '') + '>' + v.label + '<span class="count' + (n ? '' : ' hidden') + '">' + n + '</span></button>';
+    }).join('');
+    var map = { today: vToday, call: vCall, pipeline: vPipeline, radar: vRadar, health: vHealth };
+    $('#main').innerHTML = map[state.view]();
+    state.flash = '';
+  }
+  function go(v) { state.view = v; try { history.replaceState(null, '', '#' + v); } catch (e) {} render(); window.scrollTo(0, 0); }
+
+  /* ---------- events ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-go],[data-accept],[data-reject],[data-edit],[data-save],[data-cancel],[data-undo],[data-all],[data-targets],[data-addtargets],[data-toast],[data-tk],[data-cust],[data-reset]');
+    if (!t) return;
+    var d = t.dataset;
+    if (d.go) return go(d.go);
+    if (d.accept) { prop(d.accept).status = 'accepted'; state.flash = 'deal'; toast('Applied to CRM'); }
+    else if (d.reject) { prop(d.reject).status = 'rejected'; }
+    else if (d.edit) { prop(d.edit).editing = true; }
+    else if (d.cancel) { prop(d.cancel).editing = false; }
+    else if (d.save) { var p = prop(d.save), v = $('#edit-' + d.save).value.trim(); if (v) p.to = v; p.editing = false; p.status = 'accepted'; toast('Edited and applied'); }
+    else if (d.undo) { prop(d.undo).status = 'pending'; }
+    else if (d.all) { state.proposals.forEach(function (p) { if (p.status === 'pending') p.status = 'accepted'; }); state.flash = 'deal'; toast('All updates applied. Harbor Bank moved to Proposal.'); }
+    else if (d.targets) { state.targetList = true; toast('Target list created from 14 sources (sample)'); }
+    else if (d.addtargets) { state.targetsAdded = true; toast('5 aviation companies added to Discovery (sample)'); }
+    else if (d.toast) { toast(d.toast); return; }
+    else if (d.cust) { state.selected = d.cust; }
+    else if (d.reset) { var v2 = state.view; state = fresh(); state.view = v2; toast('Demo reset'); }
+    else if (d.tk) { addTicket(d.tk); }
+    var sc = window.scrollY; render(); window.scrollTo(0, sc);
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'cad') { state.cadence = e.target.value; render(); }
+    if (e.target.id === 'simc') { state.simCust = e.target.value; state.selected = e.target.value; var sc = window.scrollY; render(); window.scrollTo(0, sc); }
+  });
+  document.addEventListener('mouseover', function (e) {
+    var el = e.target.closest('.prop[data-line]'); if (!el) return;
+    var ln = document.querySelector('.tline[data-line="' + el.dataset.line + '"]');
+    if (ln) { ln.classList.add('hl'); ln.scrollIntoView({ block: 'nearest' }); }
+  });
+  document.addEventListener('mouseout', function (e) {
+    var el = e.target.closest('.prop[data-line]'); if (!el) return;
+    document.querySelectorAll('.tline.hl').forEach(function (n) { n.classList.remove('hl'); });
+  });
+
+  function addTicket(p) {
+    var c = state.customers.filter(function (x) { return x.id === state.simCust; })[0];
+    var before = health(c);
+    state.tkId++;
+    var summ = { P1: 'Service down for all users', P2: 'Feature broken for a team', P3: 'Minor issue reported' }[p];
+    c.tk.push({ p: p, d: 0, s: summ, id: 'SUP-' + state.tkId });
+    var after = health(c);
+    state.selected = c.id;
+    if (RANK[after] > RANK[before]) {
+      var k = counts(c);
+      var acts = { yellow: 'Ask the CSM to review these tickets before the next check-in.', orange: 'Book an exec call this week and flag the renewal (' + c.renew + ', ' + c.arr + ').', red: 'Escalate to leadership today. ' + c.arr + ' ARR is at stake.' };
+      state.alerts.unshift({ cust: c.n, from: before, to: after, when: 'Just now', why: k.P1 + ' P1, ' + k.P2 + ' P2, ' + k.P3 + ' P3 in the last 7 days (latest SUP-' + state.tkId + ')', act: acts[after] });
+      toast(c.n + ' moved from ' + LABEL[before] + ' to ' + LABEL[after] + '. Account owner notified.');
+    } else {
+      toast('Ticket logged. ' + c.n + ' stays ' + LABEL[after] + '.');
+    }
+  }
+
+  $('#themeBtn').addEventListener('click', function () {
+    var r = document.documentElement, dark = r.dataset.theme === 'dark' || (!r.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+    r.dataset.theme = dark ? 'light' : 'dark';
+  });
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (VIEWS.some(function (v) { return v.id === h; })) { state.view = h; render(); } });
+  var h0 = location.hash.slice(1); if (VIEWS.some(function (v) { return v.id === h0; })) state.view = h0;
+  render();
+})();
+</script>
